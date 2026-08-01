@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { sb } from '../lib/supabaseClient';
+import { EyeIcon, EyeOffIcon } from './ui/Icons';
 
 function PasswordInput({ value, onChange, placeholder, autoComplete }) {
   const [show, setShow] = useState(false);
@@ -13,7 +14,7 @@ function PasswordInput({ value, onChange, placeholder, autoComplete }) {
         onChange={onChange}
       />
       <button type="button" className="password-toggle" onClick={() => setShow(s => !s)} aria-label={show ? 'Esconder senha' : 'Mostrar senha'}>
-        {show ? '🙈' : '👁️'}
+        {show ? <EyeOffIcon /> : <EyeIcon />}
       </button>
     </div>
   );
