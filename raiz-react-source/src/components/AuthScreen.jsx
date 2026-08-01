@@ -25,7 +25,7 @@ export default function AuthScreen() {
   }
 
   return (
-    <div className="auth-screen">
+    <div className="auth-screen" id="authScreen">
       <div className="auth-logo">Raiz</div>
       <div className="auth-sub">{isSignup ? 'Crie sua conta para começar.' : 'Entre para acessar sua evolução pessoal.'}</div>
       <input type="email" placeholder="E-mail" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} />
