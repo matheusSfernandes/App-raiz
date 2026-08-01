@@ -34,3 +34,9 @@ export function HamburgerIcon() {
 export function CheckIcon() {
   return (<svg viewBox="0 0 24 24" fill="none" stroke="#0F2E1C" strokeWidth="3.5"><path d="M5 13l4 4L19 7" /></svg>);
 }
+export function EyeIcon() {
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12z" /><circle cx="12" cy="12" r="3" /></svg>);
+}
+export function EyeOffIcon() {
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3l18 18" /><path d="M10.6 5.1A10.6 10.6 0 0112 5c7 0 10.5 7 10.5 7a15.5 15.5 0 01-3.1 4M6.3 6.3C3.4 8.1 1.5 12 1.5 12S5 19 12 19a10.6 10.6 0 004.1-.8" /><path d="M9.5 9.5a3 3 0 004.2 4.2" /></svg>);
+}
