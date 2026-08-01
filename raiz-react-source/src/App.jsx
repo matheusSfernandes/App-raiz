@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { sb } from './lib/supabaseClient';
 import AuthScreen from './components/AuthScreen';
+import ResetPasswordScreen from './components/ResetPasswordScreen';
 import Sidebar from './components/Sidebar';
 import TabBar from './components/TabBar';
 import Toasts from './components/Toasts';
@@ -79,10 +80,14 @@ function AppShell() {
 
 export default function App() {
   const [session, setSession] = useState(undefined);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   useEffect(() => {
     sb.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: listener } = sb.auth.onAuthStateChange((_event, s) => setSession(s));
+    const { data: listener } = sb.auth.onAuthStateChange((event, s) => {
+      setSession(s);
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
+    });
     return () => listener.subscription.unsubscribe();
   }, []);
 
@@ -93,6 +98,7 @@ export default function App() {
   }, []);
 
   if (session === undefined) return null;
+  if (passwordRecovery) return <ResetPasswordScreen onDone={() => setPasswordRecovery(false)} />;
   if (!session) return <AuthScreen />;
 
   return (
