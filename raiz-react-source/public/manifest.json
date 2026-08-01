@@ -1,0 +1,16 @@
+{
+  "name": "Raiz — evolução pessoal",
+  "short_name": "Raiz",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#241B3D",
+  "theme_color": "#241B3D",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
