@@ -405,3 +405,8 @@
     }
     body:has(#authScreen:not(.hidden)) { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
   }
+
+  /* Evita o zoom automático do Safari/iOS ao focar campos de texto (exige mínimo de 16px) */
+  @media (max-width: 899px) {
+    input, select, textarea { font-size: 16px !important; }
+  }
