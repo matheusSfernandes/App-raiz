@@ -4,23 +4,28 @@ import { todayKey } from '../../lib/helpers';
 import { computeAchievements } from '../../lib/achievements';
 import { sb } from '../../lib/supabaseClient';
 
+function emptyDraft(profile) {
+  return {
+    name: profile.name || '',
+    goal: profile.goal || '',
+    quote: profile.quote || '',
+    goalLabel: profile.goal_label || '',
+    goalDate: profile.goal_date || '',
+    budgetLimit: profile.budget_limit || '',
+  };
+}
+
 export default function PerfilView({ onNavigate }) {
   const { profile, habits, transactions, user, saveProfile } = useAppData();
-  const [name, setName] = useState(profile.name || '');
-  const [goal, setGoal] = useState(profile.goal || '');
-  const [quote, setQuote] = useState(profile.quote || '');
-  const [goalLabel, setGoalLabel] = useState(profile.goal_label || '');
-  const [goalDate, setGoalDate] = useState(profile.goal_date || '');
-  const [budgetLimit, setBudgetLimit] = useState(profile.budget_limit || '');
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(emptyDraft(profile));
   const [notifEnabled, setNotifEnabled] = useState(localStorage.getItem('raiz_notif_enabled') === '1');
   const [soundEnabled, setSoundEnabled] = useState(localStorage.getItem('raiz_sound_enabled') !== '0');
   const [levelInfo, setLevelInfo] = useState(null);
 
   useEffect(() => {
-    setName(profile.name || ''); setGoal(profile.goal || ''); setQuote(profile.quote || '');
-    setGoalLabel(profile.goal_label || ''); setGoalDate(profile.goal_date || '');
-    setBudgetLimit(profile.budget_limit || '');
-  }, [profile]);
+    if (!isEditing) setDraft(emptyDraft(profile));
+  }, [profile, isEditing]);
 
   useEffect(() => {
     (async () => {
@@ -46,11 +51,27 @@ export default function PerfilView({ onNavigate }) {
     })();
   }, [habits, transactions, profile, user]);
 
+  function startEditing() {
+    setDraft(emptyDraft(profile));
+    setIsEditing(true);
+  }
+  function cancelEditing() {
+    setDraft(emptyDraft(profile));
+    setIsEditing(false);
+  }
   async function handleSave() {
     await saveProfile({
-      name, goal, quote, goal_label: goalLabel, goal_date: goalDate || null,
-      budget_limit: budgetLimit ? parseFloat(budgetLimit) : null,
+      name: draft.name,
+      goal: draft.goal,
+      quote: draft.quote,
+      goal_label: draft.goalLabel,
+      goal_date: draft.goalDate || null,
+      budget_limit: draft.budgetLimit ? parseFloat(draft.budgetLimit) : null,
     });
+    setIsEditing(false);
+  }
+  function setField(key, value) {
+    setDraft(d => ({ ...d, [key]: value }));
   }
 
   async function toggleNotif() {
@@ -76,19 +97,50 @@ export default function PerfilView({ onNavigate }) {
   const monthKey = todayKey().slice(0, 7);
   const usedThisMonth = freezeLog.filter(d => d.slice(0, 7) === monthKey).length;
 
+  function displayDate(d) {
+    if (!d) return 'Não definida';
+    return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR');
+  }
+
   return (
     <div className="view active">
-      <div className="section-title">Meu perfil</div>
-      <div className="profile-field"><label>Nome</label><input type="text" value={name} onChange={e => setName(e.target.value)} onBlur={handleSave} /></div>
-      <div className="profile-field"><label>Objetivo principal</label><input type="text" value={goal} onChange={e => setGoal(e.target.value)} onBlur={handleSave} placeholder="Ex: Saúde, Estudos, Finanças" /></div>
-      <div className="profile-field"><label>Frase favorita</label><input type="text" value={quote} onChange={e => setQuote(e.target.value)} onBlur={handleSave} placeholder="Sua motivação" /></div>
+      <div className="section-title">
+        Meu perfil
+        {!isEditing && <button className="edit-btn" onClick={startEditing}>✎ Editar</button>}
+      </div>
 
-      <div className="section-title">Meta em destaque</div>
-      <div className="profile-field"><label>Nome da meta</label><input type="text" value={goalLabel} onChange={e => setGoalLabel(e.target.value)} onBlur={handleSave} placeholder="Ex: Entrega do TCC" /></div>
-      <div className="profile-field"><label>Data</label><input type="date" value={goalDate} onChange={e => setGoalDate(e.target.value)} onBlur={handleSave} /></div>
+      {!isEditing ? (
+        <>
+          <div className="profile-field"><label>Nome</label><div className="profile-value">{profile.name || 'Não definido'}</div></div>
+          <div className="profile-field"><label>Objetivo principal</label><div className="profile-value">{profile.goal || 'Não definido'}</div></div>
+          <div className="profile-field"><label>Frase favorita</label><div className="profile-value">{profile.quote || 'Não definida'}</div></div>
 
-      <div className="section-title">Orçamento mensal</div>
-      <div className="profile-field"><label>Limite de gastos (R$)</label><input type="number" value={budgetLimit} onChange={e => setBudgetLimit(e.target.value)} onBlur={handleSave} placeholder="Ex: 1500" /></div>
+          <div className="section-title">Meta em destaque</div>
+          <div className="profile-field"><label>Nome da meta</label><div className="profile-value">{profile.goal_label || 'Não definida'}</div></div>
+          <div className="profile-field"><label>Data</label><div className="profile-value">{displayDate(profile.goal_date)}</div></div>
+
+          <div className="section-title">Orçamento mensal</div>
+          <div className="profile-field"><label>Limite de gastos</label><div className="profile-value">{profile.budget_limit ? `R$ ${Number(profile.budget_limit).toFixed(2)}` : 'Não definido'}</div></div>
+        </>
+      ) : (
+        <>
+          <div className="profile-field"><label>Nome</label><input type="text" value={draft.name} onChange={e => setField('name', e.target.value)} /></div>
+          <div className="profile-field"><label>Objetivo principal</label><input type="text" value={draft.goal} onChange={e => setField('goal', e.target.value)} placeholder="Ex: Saúde, Estudos, Finanças" /></div>
+          <div className="profile-field"><label>Frase favorita</label><input type="text" value={draft.quote} onChange={e => setField('quote', e.target.value)} placeholder="Sua motivação" /></div>
+
+          <div className="section-title">Meta em destaque</div>
+          <div className="profile-field"><label>Nome da meta</label><input type="text" value={draft.goalLabel} onChange={e => setField('goalLabel', e.target.value)} placeholder="Ex: Entrega do TCC" /></div>
+          <div className="profile-field"><label>Data</label><input type="date" value={draft.goalDate} onChange={e => setField('goalDate', e.target.value)} /></div>
+
+          <div className="section-title">Orçamento mensal</div>
+          <div className="profile-field"><label>Limite de gastos (R$)</label><input type="number" value={draft.budgetLimit} onChange={e => setField('budgetLimit', e.target.value)} placeholder="Ex: 1500" /></div>
+
+          <div className="btn-row" style={{ marginTop: 16 }}>
+            <button className="btn" onClick={handleSave}>Salvar</button>
+            <button className="btn ghost" onClick={cancelEditing}>Cancelar</button>
+          </div>
+        </>
+      )}
 
       <div className="section-title">Lembretes</div>
       <button className="add-toggle" onClick={toggleNotif}>{notifEnabled ? '🔕 Desativar lembretes' : '🔔 Ativar lembretes de hábito'}</button>
