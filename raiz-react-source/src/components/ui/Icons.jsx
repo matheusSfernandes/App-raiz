@@ -7,6 +7,7 @@ export const NAV_ITEMS = [
   { view: 'perfil', label: 'Perfil', person: true, inTabbar: true },
   { view: 'conquistas', label: 'Conquistas', trophy: true, inTabbar: false },
   { view: 'foco', label: 'Foco', target: true, inTabbar: false },
+  { view: 'lembretes', label: 'Lembretes', bell: true, inTabbar: false },
 ];
 
 export function NavIcon({ item }) {
@@ -24,6 +25,9 @@ export function NavIcon({ item }) {
   }
   if (item.target) {
     return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /></svg>);
+  }
+  if (item.bell) {
+    return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 8a6 6 0 0112 0c0 5 2 6 2 6H4s2-1 2-6z" /><path d="M10 21a2 2 0 004 0" /></svg>);
   }
   return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d={item.path} /></svg>);
 }
