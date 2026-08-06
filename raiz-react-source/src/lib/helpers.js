@@ -5,7 +5,7 @@ export const AREA_COLORS = {
   Geral: '#B4A9D6', Trabalho: '#2FE6E6', Saúde: '#58D68D', Estudos: '#FFB627',
   Finanças: '#FF3D81', Alimentação: '#FF7A45', Pessoal: '#9B7EF5', Lazer: '#FFD65C',
 };
-export const PRIORITY_DOT = { alta: '🔴', media: '🟡', baixa: '🟢' };
+export const PRIORITY_DOT = { alta: '🔴', media: '🟡', baixa: '🟢', none: '' };
 
 export function todayKey() {
   return new Date().toISOString().slice(0, 10);
