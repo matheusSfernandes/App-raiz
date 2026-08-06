@@ -236,6 +236,9 @@
   .routine-group-header.overdue { background: linear-gradient(90deg, var(--clay), #C4501E); color: #FFFFFF; }
   .routine-group-header.upcoming { background: linear-gradient(90deg, var(--amber), #E8620C); color: #3A2600; }
   .routine-group-header.done { background: linear-gradient(90deg, var(--moss), var(--moss-deep)); color: #0F2E1C; }
+  .routine-group-header.neutral { background: rgba(255,255,255,0.08); color: var(--ink-soft); }
+  .flag-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft); margin-bottom: 10px; cursor: pointer; }
+  .flag-check input { width: auto; margin: 0; }
   .routine-group-body {
     border: 2px solid var(--line); border-top: none; border-radius: 0 0 14px 14px; padding: 10px; background: var(--card);
   }
