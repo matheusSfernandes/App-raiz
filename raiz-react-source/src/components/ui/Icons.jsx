@@ -2,12 +2,12 @@ export const NAV_ITEMS = [
   { view: 'inicio', label: 'Início', path: 'M3 12l9-9 9 9M5 10v10h14V10', inTabbar: true },
   { view: 'rotina', label: 'Rotina', path: 'M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11', inTabbar: true },
   { view: 'habitos', label: 'Hábitos', circle: true, inTabbar: true },
+  { view: 'lembretes', label: 'Lembretes', bell: true, inTabbar: false },
   { view: 'financas', label: 'Finanças', path: 'M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6', inTabbar: true },
   { view: 'historico', label: 'Histórico', rect: true, inTabbar: true },
-  { view: 'perfil', label: 'Perfil', person: true, inTabbar: true },
   { view: 'conquistas', label: 'Conquistas', trophy: true, inTabbar: false },
   { view: 'foco', label: 'Foco', target: true, inTabbar: false },
-  { view: 'lembretes', label: 'Lembretes', bell: true, inTabbar: false },
+  { view: 'perfil', label: 'Perfil', person: true, inTabbar: true },
 ];
 
 export function NavIcon({ item }) {
