@@ -17,6 +17,7 @@ import HistoricoView from './components/views/HistoricoView';
 import PerfilView from './components/views/PerfilView';
 import ConquistasView from './components/views/ConquistasView';
 import FocoView from './components/views/FocoView';
+import LembretesView from './components/views/LembretesView';
 
 const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
@@ -68,6 +69,7 @@ function AppShell() {
               {view === 'perfil' && <PerfilView onNavigate={navigate} />}
               {view === 'conquistas' && <ConquistasView />}
               {view === 'foco' && <FocoView />}
+              {view === 'lembretes' && <LembretesView />}
             </div>
           )}
         </div>
