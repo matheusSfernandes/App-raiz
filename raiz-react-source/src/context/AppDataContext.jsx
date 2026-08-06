@@ -14,6 +14,7 @@ export function AppDataProvider({ user, children }) {
   const [tasks, setTasks] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [subtasksByTask, setSubtasksByTask] = useState({});
+  const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState([]);
   const toastId = useRef(0);
@@ -58,11 +59,12 @@ export function AppDataProvider({ user, children }) {
   }, [user, showToast]);
 
   const refreshAll = useCallback(async () => {
-    const [{ data: profileRows }, { data: habitsData }, { data: tasksData }, { data: txData }] = await Promise.all([
+    const [{ data: profileRows }, { data: habitsData }, { data: tasksData }, { data: txData }, { data: remindersData }] = await Promise.all([
       sb.from('profiles').select('*').eq('id', user.id).maybeSingle(),
       sb.from('habits').select('*').eq('user_id', user.id).order('created_at'),
       sb.from('tasks').select('*').eq('user_id', user.id).eq('date_key', todayKey()).order('start_time'),
       sb.from('transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      sb.from('reminders').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
     ]);
 
     let prof = profileRows;
@@ -87,6 +89,7 @@ export function AppDataProvider({ user, children }) {
     setHabits(fixedHabits);
     setTasks(taskList);
     setTransactions(txData || []);
+    setReminders(remindersData || []);
     setSubtasksByTask(subs);
     setLoading(false);
   }, [user, checkStreakBreaks]);
@@ -173,6 +176,30 @@ export function AppDataProvider({ user, children }) {
     await refreshAll();
   };
 
+  // ---- Reminders ----
+  const saveReminder = async (editId, fields) => {
+    if (editId) {
+      await sb.from('reminders').update(fields).eq('id', editId);
+    } else {
+      await sb.from('reminders').insert({ user_id: user.id, done: false, flagged: false, priority: 'none', ...fields });
+    }
+    await refreshAll();
+  };
+  const toggleReminder = async (id) => {
+    const r = reminders.find(x => x.id === id);
+    await sb.from('reminders').update({ done: !r.done }).eq('id', id);
+    await refreshAll();
+  };
+  const toggleReminderFlag = async (id) => {
+    const r = reminders.find(x => x.id === id);
+    await sb.from('reminders').update({ flagged: !r.flagged }).eq('id', id);
+    await refreshAll();
+  };
+  const deleteReminder = async (id) => {
+    await sb.from('reminders').delete().eq('id', id);
+    await refreshAll();
+  };
+
   // ---- Profile ----
   const saveProfile = async (fields) => {
     await sb.from('profiles').update(fields).eq('id', user.id);
@@ -180,12 +207,13 @@ export function AppDataProvider({ user, children }) {
   };
 
   const value = {
-    user, profile, habits, tasks, transactions, subtasksByTask, loading,
+    user, profile, habits, tasks, transactions, subtasksByTask, reminders, loading,
     toasts, showToast, refreshAll,
     saveHabit, toggleHabit, deleteHabit,
     saveTask, toggleTask, deleteTask,
     addSubtask, toggleSubtask, deleteSubtask,
     addTx, deleteTx,
+    saveReminder, toggleReminder, toggleReminderFlag, deleteReminder,
     saveProfile,
   };
 
