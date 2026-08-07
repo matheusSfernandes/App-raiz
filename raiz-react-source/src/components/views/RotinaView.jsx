@@ -66,6 +66,7 @@ function SubtaskPanel({ task }) {
           <input type="text" placeholder="+ Adicionar subtarefa" value={newTitle}
             onChange={e => setNewTitle(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()} />
+          <button type="button" className="subtask-save-btn" onClick={handleAdd}>Salvar</button>
         </div>
       </div>
     </div>
