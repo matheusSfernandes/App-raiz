@@ -13,7 +13,7 @@ function pctColor(pct) {
 }
 
 export default function HistoricoView() {
-  const { habits, reminders, user } = useAppData();
+  const { habits, user } = useAppData();
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [dayData, setDayData] = useState({});
   const [selectedKey, setSelectedKey] = useState(null);
@@ -65,8 +65,7 @@ export default function HistoricoView() {
     const loggedIds = (dayLogs || []).map(l => l.habit_id);
     const dow = new Date(key + 'T12:00:00').getDay();
     const scheduledHabits = habits.filter(h => (h.days_of_week || [0, 1, 2, 3, 4, 5, 6]).includes(dow));
-    const dayReminders = reminders.filter(r => r.date_key === key);
-    setDayDetail({ tasks: dayTasks || [], habits: scheduledHabits, loggedIds, reminders: dayReminders });
+    setDayDetail({ tasks: dayTasks || [], habits: scheduledHabits, loggedIds });
   }
 
   const year = calendarDate.getFullYear();
@@ -116,7 +115,7 @@ export default function HistoricoView() {
           <div className="section-title" style={{ marginTop: 20 }}>
             {new Date(selectedKey + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </div>
-          {(!dayDetail.habits.length && !dayDetail.tasks.length && !dayDetail.reminders.length) ? (
+          {(!dayDetail.habits.length && !dayDetail.tasks.length) ? (
             <div className="empty">Nada registrado nesse dia.</div>
           ) : (
             <>
@@ -133,12 +132,6 @@ export default function HistoricoView() {
                 <div className={`row ${t.done ? 'done' : ''}`} key={t.id}>
                   <div className={`check ${t.done ? 'checked' : ''}`} style={{ cursor: 'default' }}><CheckIcon /></div>
                   <div className="row-body"><div className="title">{t.title}</div><div className="meta">Tarefa</div></div>
-                </div>
-              ))}
-              {dayDetail.reminders.map(r => (
-                <div className={`row ${r.done ? 'done' : ''}`} key={r.id}>
-                  <div className={`check ${r.done ? 'checked' : ''}`} style={{ cursor: 'default' }}><CheckIcon /></div>
-                  <div className="row-body"><div className="title">{r.title}</div><div className="meta">Lembrete{r.time ? ` · ${r.time}` : ''}</div></div>
                 </div>
               ))}
             </>
