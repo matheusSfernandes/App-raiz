@@ -13,39 +13,64 @@ function formatDateLabel(dateKey) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-function TaskForm({ editing, defaultDate, onCancel, onSaved }) {
+function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
   const { saveTask } = useAppData();
   const [title, setTitle] = useState(editing?.title || '');
+  const [notes, setNotes] = useState(editing?.notes || '');
+  const [hasDate, setHasDate] = useState(editing ? !!editing.date_key : !noDateMode);
   const [date, setDate] = useState(editing?.date_key || defaultDate);
   const [start, setStart] = useState(editing?.start_time || '');
   const [end, setEnd] = useState(editing?.end_time || '');
   const [category, setCategory] = useState(editing?.category || 'Geral');
-  const [priority, setPriority] = useState(editing?.priority || 'media');
+  const [priority, setPriority] = useState(editing?.priority || 'none');
+  const [flagged, setFlagged] = useState(editing?.flagged || false);
 
   async function handleSave() {
     if (!title.trim()) return;
-    await saveTask(editing?.id || null, { title: title.trim(), date_key: date, start_time: start, end_time: end, category, priority });
-    onSaved(date);
+    const finalDate = hasDate ? date : null;
+    await saveTask(editing?.id || null, {
+      title: title.trim(),
+      notes: notes.trim() || null,
+      date_key: finalDate,
+      start_time: hasDate ? start : '',
+      end_time: hasDate ? end : '',
+      category,
+      priority,
+      flagged,
+    });
+    onSaved(finalDate);
   }
 
   return (
     <div className="add-form open">
-      <input type="text" placeholder="Nome da tarefa" value={title} onChange={e => setTitle(e.target.value)} />
-      <div className="two">
-        <input type="date" value={date} onChange={e => setDate(e.target.value)} />
-      </div>
-      <div className="two">
-        <input type="time" value={start} onChange={e => setStart(e.target.value)} />
-        <input type="time" value={end} onChange={e => setEnd(e.target.value)} />
-      </div>
+      <input type="text" placeholder="Título" value={title} onChange={e => setTitle(e.target.value)} />
+      <input type="text" placeholder="Notas (opcional)" value={notes} onChange={e => setNotes(e.target.value)} />
+      <label className="flag-check">
+        <input type="checkbox" checked={hasDate} onChange={e => setHasDate(e.target.checked)} />
+        <span>📅 Tem data definida</span>
+      </label>
+      {hasDate && (
+        <>
+          <div className="two"><input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
+          <div className="two">
+            <input type="time" value={start} onChange={e => setStart(e.target.value)} />
+            <input type="time" value={end} onChange={e => setEnd(e.target.value)} />
+          </div>
+        </>
+      )}
       <select value={category} onChange={e => setCategory(e.target.value)}>
         {CATEGORIES.map(c => <option key={c}>{c}</option>)}
       </select>
       <select value={priority} onChange={e => setPriority(e.target.value)}>
+        <option value="none">Sem prioridade</option>
         <option value="alta">🔴 Alta prioridade</option>
         <option value="media">🟡 Média prioridade</option>
         <option value="baixa">🟢 Baixa prioridade</option>
       </select>
+      <label className="flag-check">
+        <input type="checkbox" checked={flagged} onChange={e => setFlagged(e.target.checked)} />
+        <span>🚩 Fixar esta tarefa</span>
+      </label>
       <div className="btn-row">
         <button className="btn" onClick={handleSave}>Salvar</button>
         <button className="btn ghost" onClick={onCancel}>Cancelar</button>
@@ -95,7 +120,7 @@ function SubtaskPanel({ task, subs, onChanged }) {
 }
 
 function RescheduleRow({ task, onReschedule, onCancel }) {
-  const [date, setDate] = useState(task.date_key);
+  const [date, setDate] = useState(task.date_key || todayKey());
   return (
     <div className="reschedule-row">
       <input type="date" value={date} onChange={e => setDate(e.target.value)} />
@@ -105,8 +130,8 @@ function RescheduleRow({ task, onReschedule, onCancel }) {
   );
 }
 
-function TaskRow({ task, subs, isToday, onEdit, onChanged }) {
-  const { toggleTask, deleteTask, rescheduleTask } = useAppData();
+function TaskRow({ task, subs, isToday, showReschedule, onEdit, onChanged }) {
+  const { toggleTask, deleteTask, rescheduleTask, saveTask } = useAppData();
   const [subOpen, setSubOpen] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
   const subsDone = subs.filter(s => s.done).length;
@@ -117,10 +142,13 @@ function TaskRow({ task, subs, isToday, onEdit, onChanged }) {
     if (willBeDone) { burstConfetti(rect.x, rect.y); playSuccessSound(); }
     onChanged();
   }
-
   async function handleReschedule(id, newDate) {
     await rescheduleTask(id, newDate);
     setRescheduling(false);
+    onChanged();
+  }
+  async function handleToggleFlag() {
+    await saveTask(task.id, { flagged: !task.flagged });
     onChanged();
   }
 
@@ -129,13 +157,21 @@ function TaskRow({ task, subs, isToday, onEdit, onChanged }) {
       <div className={`row ${task.done ? 'done' : ''}`}>
         <button className={`check ${task.done ? 'checked' : ''}`} onClick={handleToggle}><CheckIcon /></button>
         <div className="row-body">
-          <div className="title">{PRIORITY_DOT[task.priority || 'media']} <span className="category-tag">{task.category || 'Geral'}</span>{task.title}</div>
-          <div className="meta">{task.start_time || '--:--'}{task.end_time ? ` - ${task.end_time}` : ''}{subs.length ? ` · 📋 ${subsDone}/${subs.length}` : ''}</div>
+          <div className="title">
+            {task.flagged && '🚩 '}
+            {PRIORITY_DOT[task.priority || 'none']} <span className="category-tag">{task.category || 'Geral'}</span>{task.title}
+          </div>
+          <div className="meta">
+            {task.date_key ? `${task.start_time || '--:--'}${task.end_time ? ' - ' + task.end_time : ''}` : 'Sem data'}
+            {subs.length ? ` · 📋 ${subsDone}/${subs.length}` : ''}
+            {task.notes ? ` · ${task.notes}` : ''}
+          </div>
         </div>
-        {!task.done && !isToday && <button className="edit-btn" onClick={() => setRescheduling(o => !o)}>📅</button>}
+        {!task.done && showReschedule && <button className="edit-btn" onClick={() => setRescheduling(o => !o)}>📅</button>}
+        <button className="edit-btn" onClick={handleToggleFlag} style={{ color: task.flagged ? 'var(--amber)' : undefined }}>🚩</button>
         <button className="edit-btn" onClick={() => setSubOpen(o => !o)}>📋</button>
         <button className="edit-btn" onClick={() => onEdit(task)}>✎</button>
-        <button className="del-btn" onClick={() => { if (confirm(`Apagar a tarefa "${task.title}"?`)) { deleteTask(task.id); onChanged(); } }}>×</button>
+        <button className="del-btn" onClick={() => { if (confirm(`Apagar "${task.title}"?`)) { deleteTask(task.id); onChanged(); } }}>×</button>
       </div>
       {rescheduling && <RescheduleRow task={task} onReschedule={handleReschedule} onCancel={() => setRescheduling(false)} />}
       {subOpen && <SubtaskPanel task={task} subs={subs} onChanged={onChanged} />}
@@ -145,39 +181,63 @@ function TaskRow({ task, subs, isToday, onEdit, onChanged }) {
 
 export default function RotinaView() {
   const { user } = useAppData();
+  const [noDateMode, setNoDateMode] = useState(false);
   const [viewedDate, setViewedDate] = useState(todayKey());
   const [viewedTasks, setViewedTasks] = useState([]);
   const [subtasksByTask, setSubtasksByTask] = useState({});
+
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+
+  const loadSubtasksFor = useCallback(async (list) => {
+    if (!list.length) { setSubtasksByTask({}); return; }
+    const { data: subsData } = await sb.from('subtasks').select('*').eq('user_id', user.id).in('task_id', list.map(t => t.id)).order('created_at');
+    const grouped = {};
+    (subsData || []).forEach(s => { grouped[s.task_id] = grouped[s.task_id] || []; grouped[s.task_id].push(s); });
+    setSubtasksByTask(grouped);
+  }, [user]);
 
   const loadDay = useCallback(async (dateKey) => {
     const { data: tasksData } = await sb.from('tasks').select('*').eq('user_id', user.id).eq('date_key', dateKey).order('start_time');
     const list = tasksData || [];
     setViewedTasks(list);
-    if (list.length) {
-      const { data: subsData } = await sb.from('subtasks').select('*').eq('user_id', user.id).in('task_id', list.map(t => t.id)).order('created_at');
-      const grouped = {};
-      (subsData || []).forEach(s => { grouped[s.task_id] = grouped[s.task_id] || []; grouped[s.task_id].push(s); });
-      setSubtasksByTask(grouped);
-    } else {
-      setSubtasksByTask({});
-    }
-  }, [user]);
+    await loadSubtasksFor(list);
+  }, [user, loadSubtasksFor]);
 
-  useEffect(() => { loadDay(viewedDate); }, [viewedDate, loadDay]);
+  const loadNoDate = useCallback(async () => {
+    const { data: tasksData } = await sb.from('tasks').select('*').eq('user_id', user.id).is('date_key', null).order('created_at', { ascending: false });
+    const list = tasksData || [];
+    setViewedTasks(list);
+    await loadSubtasksFor(list);
+  }, [user, loadSubtasksFor]);
+
+  useEffect(() => {
+    if (noDateMode) loadNoDate();
+    else loadDay(viewedDate);
+  }, [noDateMode, viewedDate, loadDay, loadNoDate]);
+
+  function refresh() {
+    if (noDateMode) loadNoDate();
+    else loadDay(viewedDate);
+  }
 
   function changeDay(deltaDays) {
     const d = new Date(viewedDate + 'T12:00:00');
     d.setDate(d.getDate() + deltaDays);
     setViewedDate(dateToKey(d));
   }
-  function goToday() { setViewedDate(todayKey()); }
+  function goToday() { setNoDateMode(false); setViewedDate(todayKey()); }
 
-  const isToday = viewedDate === todayKey();
+  const isToday = !noDateMode && viewedDate === todayKey();
   const nowHHMM = new Date().toTimeString().slice(0, 5);
 
   const groups = useMemo(() => {
+    if (noDateMode) {
+      const flagged = viewedTasks.filter(t => t.flagged && !t.done);
+      const pending = viewedTasks.filter(t => !t.flagged && !t.done);
+      const done = viewedTasks.filter(t => t.done);
+      return { flagged, pending, done, inprogress: [], overdue: [], upcoming: [] };
+    }
     if (isToday) {
       const g = { inprogress: [], overdue: [], upcoming: [], done: [] };
       viewedTasks.forEach(t => g[categorizeTask(t, nowHHMM)].push(t));
@@ -185,19 +245,21 @@ export default function RotinaView() {
       return g;
     }
     if (viewedDate < todayKey()) {
-      const pending = viewedTasks.filter(t => !t.done);
-      const done = viewedTasks.filter(t => t.done);
-      return { overdue: pending, done, inprogress: [], upcoming: [] };
+      return { overdue: viewedTasks.filter(t => !t.done), done: viewedTasks.filter(t => t.done), inprogress: [], upcoming: [] };
     }
-    const pending = viewedTasks.filter(t => !t.done);
-    const done = viewedTasks.filter(t => t.done);
-    pending.sort((a, b) => (a.start_time || '99:99').localeCompare(b.start_time || '99:99'));
-    return { upcoming: pending, done, inprogress: [], overdue: [] };
-  }, [viewedTasks, isToday, viewedDate, nowHHMM]);
+    const pending = viewedTasks.filter(t => !t.done).sort((a, b) => (a.start_time || '99:99').localeCompare(b.start_time || '99:99'));
+    return { upcoming: pending, done: viewedTasks.filter(t => t.done), inprogress: [], overdue: [] };
+  }, [viewedTasks, isToday, viewedDate, nowHHMM, noDateMode]);
 
   const nextTask = isToday ? [...groups.inprogress, ...groups.upcoming][0] : null;
 
-  const sections = isToday
+  const sections = noDateMode
+    ? [
+        { key: 'flagged', label: '🚩 Fixadas' },
+        { key: 'pending', label: '📌 Pendentes' },
+        { key: 'done', label: '✅ Concluídas' },
+      ]
+    : isToday
     ? [
         { key: 'inprogress', label: '🔄 Em progresso' },
         { key: 'overdue', label: '⚠️ Atrasadas' },
@@ -219,8 +281,8 @@ export default function RotinaView() {
   function closeForm() { setFormOpen(false); setEditing(null); }
   function afterSave(savedDate) {
     setFormOpen(false); setEditing(null);
-    if (savedDate === viewedDate) loadDay(viewedDate);
-    else setViewedDate(savedDate);
+    if (savedDate === null) { setNoDateMode(true); }
+    else { setNoDateMode(false); setViewedDate(savedDate); }
   }
 
   return (
@@ -228,13 +290,16 @@ export default function RotinaView() {
       <div className="section-title">Tarefas <span className="count">{viewedTasks.length}</span></div>
 
       <div className="day-nav">
-        <button className="cal-arrow" onClick={() => changeDay(-1)}>‹</button>
+        {!noDateMode && <button className="cal-arrow" onClick={() => changeDay(-1)}>‹</button>}
         <div className="day-nav-label">
-          {formatDateLabel(viewedDate)}
-          {!isToday && <button className="day-nav-today" onClick={goToday}>Hoje</button>}
+          {noDateMode ? '📌 Sem data' : formatDateLabel(viewedDate)}
+          {(noDateMode || !isToday) && <button className="day-nav-today" onClick={goToday}>Hoje</button>}
         </div>
-        <button className="cal-arrow" onClick={() => changeDay(1)}>›</button>
+        {!noDateMode && <button className="cal-arrow" onClick={() => changeDay(1)}>›</button>}
       </div>
+      <button className="add-toggle" style={{ marginBottom: 14 }} onClick={() => setNoDateMode(m => !m)}>
+        {noDateMode ? '📅 Ver por data' : '📌 Ver tarefas sem data'}
+      </button>
 
       {isToday && nextTask && (
         <div className="next-task-card">
@@ -245,17 +310,17 @@ export default function RotinaView() {
       )}
 
       {!formOpen && <button className="add-toggle" onClick={openNew}>+ Nova tarefa</button>}
-      {formOpen && <TaskForm editing={editing} defaultDate={viewedDate} onCancel={closeForm} onSaved={afterSave} />}
+      {formOpen && <TaskForm editing={editing} defaultDate={viewedDate} noDateMode={noDateMode} onCancel={closeForm} onSaved={afterSave} />}
 
       {viewedTasks.length === 0 ? (
-        <div className="empty">Nenhuma tarefa para esse dia. Adicione uma acima.</div>
+        <div className="empty">Nada por aqui ainda. Adicione uma tarefa acima.</div>
       ) : (
         sections.filter(s => groups[s.key] && groups[s.key].length).map(s => (
           <div className="routine-group" key={s.key}>
-            <div className={`routine-group-header ${s.key}`}>{s.label}</div>
+            <div className={`routine-group-header ${s.key === 'flagged' || s.key === 'pending' ? 'neutral' : s.key}`}>{s.label}</div>
             <div className="routine-group-body">
               {groups[s.key].map(t => (
-                <TaskRow key={t.id} task={t} subs={subtasksByTask[t.id] || []} isToday={isToday} onEdit={openEdit} onChanged={() => loadDay(viewedDate)} />
+                <TaskRow key={t.id} task={t} subs={subtasksByTask[t.id] || []} isToday={isToday} showReschedule={!noDateMode && !isToday} onEdit={openEdit} onChanged={refresh} />
               ))}
             </div>
           </div>
