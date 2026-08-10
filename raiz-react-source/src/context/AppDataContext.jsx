@@ -134,15 +134,18 @@ export function AppDataProvider({ user, children }) {
     }
     await refreshAll();
   };
-  const toggleTask = async (id) => {
-    const t = tasks.find(x => x.id === id);
-    const willBeDone = !t.done;
-    await sb.from('tasks').update({ done: willBeDone }).eq('id', id);
+  const toggleTask = async (task) => {
+    const willBeDone = !task.done;
+    await sb.from('tasks').update({ done: willBeDone }).eq('id', task.id);
     await refreshAll();
     return willBeDone;
   };
   const deleteTask = async (id) => {
     await sb.from('tasks').delete().eq('id', id);
+    await refreshAll();
+  };
+  const rescheduleTask = async (id, newDateKey) => {
+    await sb.from('tasks').update({ date_key: newDateKey }).eq('id', id);
     await refreshAll();
   };
 
@@ -210,7 +213,7 @@ export function AppDataProvider({ user, children }) {
     user, profile, habits, tasks, transactions, subtasksByTask, reminders, loading,
     toasts, showToast, refreshAll,
     saveHabit, toggleHabit, deleteHabit,
-    saveTask, toggleTask, deleteTask,
+    saveTask, toggleTask, deleteTask, rescheduleTask,
     addSubtask, toggleSubtask, deleteSubtask,
     addTx, deleteTx,
     saveReminder, toggleReminder, toggleReminderFlag, deleteReminder,
