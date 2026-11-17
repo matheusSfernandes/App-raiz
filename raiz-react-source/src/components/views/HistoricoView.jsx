@@ -4,12 +4,12 @@ import { sb } from '../../lib/supabaseClient';
 import { dateToKey, todayKey } from '../../lib/helpers';
 import { CheckIcon } from '../ui/Icons';
 
-function pctColor(pct) {
-  if (pct === null || pct === undefined) return '#3A3355';
-  if (pct === 0) return '#FF3D81';
-  if (pct < 0.5) return '#FF7A45';
-  if (pct < 0.9) return '#FFB627';
-  return '#58D68D';
+function heatClass(pct) {
+  if (pct === null || pct === undefined || pct === 0) return 'heat-0';
+  if (pct < 0.34) return 'heat-1';
+  if (pct < 0.67) return 'heat-2';
+  if (pct < 1) return 'heat-3';
+  return 'heat-4';
 }
 
 export default function HistoricoView() {
@@ -83,13 +83,13 @@ export default function HistoricoView() {
     const key = dateToKey(date);
     const isFuture = key > todayK;
     const info = dayData[key];
-    const bg = isFuture ? '#3A3355' : pctColor(info ? info.pct : null);
     const classes = ['cal-day'];
     if (isFuture) classes.push('future');
+    else classes.push(heatClass(info ? info.pct : null));
     if (key === todayK) classes.push('today');
     if (key === selectedKey) classes.push('selected');
     cells.push(
-      <div key={key} className={classes.join(' ')} style={{ background: bg }} onClick={() => !isFuture && selectDay(key)}>{d}</div>
+      <div key={key} className={classes.join(' ')} onClick={() => !isFuture && selectDay(key)}>{d}</div>
     );
   }
 
@@ -104,10 +104,9 @@ export default function HistoricoView() {
       <div className="calendar-weekdays"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
       <div className="calendar-grid">{cells}</div>
       <div className="calendar-legend">
-        <span className="leg-dot" style={{ background: '#3A3355' }} /> sem dados
-        <span className="leg-dot" style={{ background: '#FF3D81' }} /> baixo
-        <span className="leg-dot" style={{ background: '#FFB627' }} /> médio
-        <span className="leg-dot" style={{ background: '#58D68D' }} /> alto
+        <span className="leg-label">Menos</span>
+        <span className="leg-dot heat-0" /><span className="leg-dot heat-1" /><span className="leg-dot heat-2" /><span className="leg-dot heat-3" /><span className="leg-dot heat-4" />
+        <span className="leg-label">Mais</span>
       </div>
 
       {dayDetail && (

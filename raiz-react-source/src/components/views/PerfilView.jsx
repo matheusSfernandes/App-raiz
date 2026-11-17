@@ -3,6 +3,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { todayKey } from '../../lib/helpers';
 import { computeAchievements } from '../../lib/achievements';
 import { sb } from '../../lib/supabaseClient';
+import { getTheme, setTheme } from '../../lib/theme';
 
 function emptyDraft(profile) {
   return {
@@ -22,6 +23,8 @@ export default function PerfilView({ onNavigate }) {
   const [notifEnabled, setNotifEnabled] = useState(localStorage.getItem('raiz_notif_enabled') === '1');
   const [soundEnabled, setSoundEnabled] = useState(localStorage.getItem('raiz_sound_enabled') !== '0');
   const [levelInfo, setLevelInfo] = useState(null);
+  const [theme, setThemeState] = useState(getTheme());
+  function chooseTheme(t) { setTheme(t); setThemeState(t); }
 
   useEffect(() => {
     if (!isEditing) setDraft(emptyDraft(profile));
@@ -106,7 +109,7 @@ export default function PerfilView({ onNavigate }) {
     <div className="view active">
       <div className="section-title">
         Meu perfil
-        {!isEditing && <button className="edit-btn" onClick={startEditing}>✎ Editar</button>}
+        {!isEditing && <button className="edit-btn" onClick={startEditing}>Editar</button>}
       </div>
 
       {!isEditing ? (
@@ -142,12 +145,23 @@ export default function PerfilView({ onNavigate }) {
         </>
       )}
 
-      <div className="section-title">Lembretes</div>
-      <button className="add-toggle" onClick={toggleNotif}>{notifEnabled ? '🔕 Desativar lembretes' : '🔔 Ativar lembretes de hábito'}</button>
-      <div className="notif-hint">Funciona enquanto o app está aberto no navegador (mesmo em outra aba).</div>
+      <div className="section-title">Aparência</div>
+      <div className="segmented">
+        <button className={`seg-btn ${theme === 'light' ? 'active' : ''}`} onClick={() => chooseTheme('light')}>Claro</button>
+        <button className={`seg-btn ${theme === 'dark' ? 'active' : ''}`} onClick={() => chooseTheme('dark')}>Escuro</button>
+        <button className={`seg-btn ${theme === 'auto' ? 'active' : ''}`} onClick={() => chooseTheme('auto')}>Automático</button>
+      </div>
+      <div className="notif-hint">Automático segue o tema do seu celular ou computador.</div>
 
-      <div className="section-title">Som</div>
-      <button className="add-toggle" onClick={toggleSound}>{soundEnabled ? '🔊 Desativar som ao completar' : '🔇 Ativar som ao completar'}</button>
+      <div className="section-title">Preferências</div>
+      <button className="setting-row" onClick={toggleNotif}>
+        <div><div className="setting-text">Lembretes de hábito</div><div className="setting-sub">Funciona com o app aberto no navegador</div></div>
+        <span className={`switch ${notifEnabled ? 'on' : ''}`} />
+      </button>
+      <button className="setting-row" onClick={toggleSound}>
+        <div><div className="setting-text">Som ao concluir</div><div className="setting-sub">Um toque curto ao marcar algo como feito</div></div>
+        <span className={`switch ${soundEnabled ? 'on' : ''}`} />
+      </button>
 
       <div className="section-title">Nível</div>
       {levelInfo && (
@@ -161,14 +175,15 @@ export default function PerfilView({ onNavigate }) {
           </div>
           <div className="level-bar-track"><div className="level-bar-fill" style={{ width: `${levelInfo.barPct}%` }} /></div>
           <div className="level-next">
-            {levelInfo.nextLevel ? `${levelInfo.nextLevel.min - levelInfo.totalPoints} pts para ${levelInfo.nextLevel.icon} ${levelInfo.nextLevel.name}` : 'Nível máximo alcançado! 🎉'}
+            {levelInfo.nextLevel ? `${levelInfo.nextLevel.min - levelInfo.totalPoints} pts para ${levelInfo.nextLevel.icon} ${levelInfo.nextLevel.name}` : 'Nível máximo alcançado'}
           </div>
         </div>
       )}
-      <div className="notif-hint" style={{ marginTop: 8 }}>🧊 {Math.max(0, 2 - usedThisMonth)}/2 congelamentos de sequência disponíveis este mês</div>
+      <div className="notif-hint" style={{ marginTop: 8 }}>{Math.max(0, 2 - usedThisMonth)} de 2 congelamentos de sequência disponíveis este mês</div>
 
-      <button className="add-toggle" style={{ marginTop: 16 }} onClick={() => onNavigate('conquistas')}>
-        🏆 Ver todas as conquistas {levelInfo ? `${levelInfo.unlockedCount}/30` : ''} →
+      <button className="setting-row link-row" style={{ marginTop: 12 }} onClick={() => onNavigate('conquistas')}>
+        <div><div className="setting-text">Conquistas</div><div className="setting-sub">{levelInfo ? `${levelInfo.unlockedCount} de 30 desbloqueadas` : 'Ver todas'}</div></div>
+        <span className="chev">›</span>
       </button>
     </div>
   );

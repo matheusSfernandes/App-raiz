@@ -36,7 +36,7 @@ export default function AuthScreen() {
         redirectTo: window.location.origin,
       });
       if (error) { setError(error.message); return; }
-      setErrorColor('var(--moss)');
+      setErrorColor('var(--accent)');
       setError('Link enviado! Verifique seu e-mail para redefinir a senha.');
       return;
     }
@@ -46,7 +46,7 @@ export default function AuthScreen() {
       const { data, error } = await sb.auth.signUp({ email, password });
       if (error) { setError(error.message); return; }
       if (data.user && !data.session) {
-        setErrorColor('var(--moss)');
+        setErrorColor('var(--accent)');
         setError('Conta criada! Verifique seu e-mail para confirmar antes de entrar.');
       }
     } else {

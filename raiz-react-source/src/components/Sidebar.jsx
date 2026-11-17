@@ -21,7 +21,7 @@ export default function Sidebar({ open, onClose, view, onNavigate }) {
     <>
       <div className={`sidebar-backdrop ${open ? 'show' : ''}`} onClick={onClose} />
       <div className={`sidebar ${open ? 'open' : ''}`} id="sidebar">
-        <div className="sidebar-logo">Raiz 🌱</div>
+        <div className="sidebar-logo">Raiz</div>
         {NAV_ITEMS.map(item => (
           <button
             key={item.view}

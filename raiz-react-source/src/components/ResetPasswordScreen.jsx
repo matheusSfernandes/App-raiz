@@ -33,7 +33,7 @@ export default function ResetPasswordScreen({ onDone }) {
     return (
       <div className="auth-screen" id="authScreen">
         <div className="auth-logo">Raiz</div>
-        <div className="auth-sub" style={{ color: 'var(--moss)' }}>Senha alterada com sucesso!</div>
+        <div className="auth-sub" style={{ color: 'var(--accent)' }}>Senha alterada com sucesso!</div>
         <button className="btn" onClick={onDone}>Continuar</button>
       </div>
     );

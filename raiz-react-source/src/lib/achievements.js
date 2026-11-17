@@ -1,9 +1,9 @@
 export const TIER_COLORS = {
-  bronze: { color: '#C87F4A', dark: '#8B5A2B', glow: 'rgba(200,127,74,0.55)', label: 'Bronze' },
-  prata: { color: '#D3DAE3', dark: '#8B95A3', glow: 'rgba(211,218,227,0.5)', label: 'Prata' },
-  ouro: { color: '#FFD65C', dark: '#C99A1E', glow: 'rgba(255,214,92,0.55)', label: 'Ouro' },
-  diamante: { color: '#6FE8E8', dark: '#2FA9C4', glow: 'rgba(111,232,232,0.55)', label: 'Diamante' },
-  lendario: { color: '#FF3D81', dark: '#9B2C63', glow: 'rgba(255,61,129,0.6)', label: 'Lendário' },
+  bronze: { color: '#B07A4E', label: 'Bronze' },
+  prata: { color: '#8A939E', label: 'Prata' },
+  ouro: { color: '#C49A2C', label: 'Ouro' },
+  diamante: { color: '#3F8FA6', label: 'Diamante' },
+  lendario: { color: '#8467B0', label: 'Lendário' },
 };
 
 export const ACHIEVEMENTS = [

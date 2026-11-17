@@ -2,16 +2,24 @@ export const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'S
 export const DAY_LETTERS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 export const CATEGORIES = ['Geral', 'Trabalho', 'Saúde', 'Estudos', 'Finanças', 'Alimentação', 'Pessoal', 'Lazer'];
 export const AREA_COLORS = {
-  Geral: '#B4A9D6', Trabalho: '#2FE6E6', Saúde: '#58D68D', Estudos: '#FFB627',
-  Finanças: '#FF3D81', Alimentação: '#FF7A45', Pessoal: '#9B7EF5', Lazer: '#FFD65C',
+  Geral: '#8E918A', Trabalho: '#4F7CAC', Saúde: '#4E9A6E', Estudos: '#C08A2E',
+  Finanças: '#3F8F8A', Alimentação: '#C46A45', Pessoal: '#8467B0', Lazer: '#B5656F',
 };
 export const PRIORITY_DOT = { alta: '🔴', media: '🟡', baixa: '🟢', none: '' };
 
-export function todayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
+// Datas no horário local (antes usava UTC, o que virava o dia depois das 21h no Brasil)
 export function dateToKey(d) {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+export function todayKey() {
+  return dateToKey(new Date());
+}
+export function formatKeyBR(key) {
+  if (!key) return '';
+  return new Date(key + 'T12:00:00').toLocaleDateString('pt-BR');
 }
 export function uid() {
   return Math.random().toString(36).slice(2, 9);

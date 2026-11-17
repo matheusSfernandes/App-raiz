@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
-import { todayKey, todayHabits, AREA_COLORS } from '../../lib/helpers';
+import { todayKey, todayHabits, dateToKey, AREA_COLORS } from '../../lib/helpers';
 
 function GoalCard({ profile }) {
   const { goal_label, goal_date } = profile;
@@ -15,57 +15,46 @@ function GoalCard({ profile }) {
   else daysLabel = <>{Math.abs(diffDays)} <small>dia{Math.abs(diffDays) === 1 ? '' : 's'} atrás</small></>;
   return (
     <div className="goal-card">
-      <div className="goal-label">🎯 {goal_label}</div>
+      <div className="goal-label">{goal_label}</div>
       <div className="goal-days">{daysLabel}</div>
     </div>
   );
 }
 
-function Rings({ habits, tasks }) {
+function TodayCard({ habits, tasks }) {
   const today = todayKey();
   const habitsToday = todayHabits(habits);
   const habitsDone = habitsToday.filter(h => h.last_done === today).length;
   const habitsPct = habitsToday.length ? habitsDone / habitsToday.length : 0;
   const tasksDone = tasks.filter(t => t.done).length;
   const tasksPct = tasks.length ? tasksDone / tasks.length : 0;
-  const overallPct = (habitsPct + tasksPct) / 2;
+  const parts = [habitsToday.length ? habitsPct : null, tasks.length ? tasksPct : null].filter(v => v !== null);
+  const overallPct = parts.length ? parts.reduce((a, b) => a + b, 0) / parts.length : 0;
 
-  const size = 200, cx = size / 2, cy = size / 2;
-  const rings = [
-    { r: 82, pct: overallPct, color: '#FF3D81', w: 13 },
-    { r: 60, pct: habitsPct, color: '#FFB627', w: 11 },
-    { r: 40, pct: tasksPct, color: '#2FE6E6', w: 11 },
-  ];
-
+  const size = 96, c = size / 2, r = 40, w = 7;
+  const circ = 2 * Math.PI * r;
   return (
-    <>
+    <div className="today-card">
       <div className="rings-wrap">
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-          <defs>
-            <filter id="ringGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="4" result="blur" />
-              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-            </filter>
-          </defs>
-          {rings.map(ring => {
-            const circ = 2 * Math.PI * ring.r;
-            const offset = circ * (1 - ring.pct);
-            return (
-              <g key={ring.r}>
-                <circle cx={cx} cy={cy} r={ring.r} fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth={ring.w} />
-                <circle cx={cx} cy={cy} r={ring.r} fill="none" stroke={ring.color} strokeWidth={ring.w}
-                  strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
-                  transform={`rotate(-90 ${cx} ${cy})`} filter="url(#ringGlow)"
-                  style={{ transition: 'stroke-dashoffset .5s ease' }} />
-              </g>
-            );
-          })}
-          <text x={cx} y={cy - 2} textAnchor="middle" fontFamily="Fredoka, sans-serif" fontWeight="700" fontSize="27" fill="#FFFFFF">{Math.round(overallPct * 100)}%</text>
-          <text x={cx} y={cy + 17} textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="10" fill="#B4A9D6">do dia</text>
+          <circle className="ring-track" cx={c} cy={c} r={r} fill="none" strokeWidth={w} />
+          <circle className="ring-fill" cx={c} cy={c} r={r} fill="none" strokeWidth={w}
+            strokeDasharray={circ} strokeDashoffset={circ * (1 - overallPct)} strokeLinecap="round"
+            transform={`rotate(-90 ${c} ${c})`} />
+          <text className="ring-pct" x={c} y={c + 6} textAnchor="middle" fontSize="18">{Math.round(overallPct * 100)}%</text>
         </svg>
       </div>
-      <div className="rings-label"><div className="big">{habitsDone}/{habitsToday.length} hábitos · {tasksDone}/{tasks.length} tarefas hoje</div></div>
-    </>
+      <div className="today-lines">
+        <div>
+          <div className="today-line-top"><span>Hábitos</span><span>{habitsDone}/{habitsToday.length}</span></div>
+          <div className="mini-track"><div className="mini-fill" style={{ width: `${habitsPct * 100}%` }} /></div>
+        </div>
+        <div>
+          <div className="today-line-top"><span>Tarefas</span><span>{tasksDone}/{tasks.length}</span></div>
+          <div className="mini-track"><div className="mini-fill" style={{ width: `${tasksPct * 100}%` }} /></div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -99,12 +88,12 @@ export default function InicioView() {
   return (
     <div className="view active">
       <GoalCard profile={profile} />
-      <Rings habits={habits} tasks={tasks} />
+      <TodayCard habits={habits} tasks={tasks} />
       <div className="stat-grid">
-        <div className="stat-card moss"><div className="k">{habitsDone}/{habitsToday.length}</div><div className="l">Hábitos hoje</div></div>
-        <div className="stat-card clay"><div className="k">{tasksDone}/{tasks.length}</div><div className="l">Tarefas hoje</div></div>
-        <div className="stat-card amber"><div className="k">{maxStreak}</div><div className="l">Sequência</div></div>
-        <div className="stat-card"><div className="k">R${balance.toFixed(0)}</div><div className="l">Saldo</div></div>
+        <div className="stat-card"><div className="k">{habitsDone}/{habitsToday.length}</div><div className="l">Hábitos hoje</div></div>
+        <div className="stat-card"><div className="k">{tasksDone}/{tasks.length}</div><div className="l">Tarefas hoje</div></div>
+        <div className="stat-card"><div className="k">{maxStreak} {maxStreak === 1 ? 'dia' : 'dias'}</div><div className="l">Maior sequência</div></div>
+        <div className="stat-card"><div className="k">{balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</div><div className="l">Saldo</div></div>
       </div>
 
       <div className="section-title">Áreas da vida</div>
@@ -113,10 +102,10 @@ export default function InicioView() {
       ) : (
         Object.entries(byArea).map(([cat, info]) => {
           const pct = info.total ? Math.round((info.done / info.total) * 100) : 0;
-          const color = AREA_COLORS[cat] || '#B4A9D6';
+          const color = AREA_COLORS[cat] || '#8E918A';
           return (
             <div className="area-row" key={cat}>
-              <div className="area-top"><span className="area-name">{cat}</span><span className="area-pct">{info.done}/{info.total} · {pct}%</span></div>
+              <div className="area-top"><span className="area-name"><span className="area-dot" style={{ background: color }} />{cat}</span><span className="area-pct">{info.done}/{info.total} · {pct}%</span></div>
               <div className="area-bar-track"><div className="area-bar-fill" style={{ width: `${pct}%`, background: color }} /></div>
             </div>
           );
@@ -137,8 +126,8 @@ function WeeklySummaryCard() {
     (async () => {
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const start14 = new Date(today); start14.setDate(start14.getDate() - 13);
-      const startKey = start14.toISOString().slice(0, 10);
-      const todayK = today.toISOString().slice(0, 10);
+      const startKey = dateToKey(start14);
+      const todayK = dateToKey(today);
       const [{ data: logs }, { data: rangeTasks }] = await Promise.all([
         sb.from('habit_logs').select('habit_id,date_key').eq('user_id', user.id).gte('date_key', startKey).lte('date_key', todayK),
         sb.from('tasks').select('date_key,done').eq('user_id', user.id).gte('date_key', startKey).lte('date_key', todayK),
@@ -147,7 +136,7 @@ function WeeklySummaryCard() {
         let total = 0, done = 0;
         for (let i = offsetStart; i <= offsetEnd; i++) {
           const d = new Date(today); d.setDate(d.getDate() - i);
-          const key = d.toISOString().slice(0, 10);
+          const key = dateToKey(d);
           const dow = d.getDay();
           const scheduled = habits.filter(h => {
             const days = h.days_of_week || [0, 1, 2, 3, 4, 5, 6];
@@ -170,15 +159,15 @@ function WeeklySummaryCard() {
   if (!state || state.thisWeek === null) return <div className="empty">Ainda sem dados suficientes essa semana.</div>;
   const delta = state.lastWeek !== null ? state.thisWeek - state.lastWeek : null;
   const cls = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
-  const arrow = delta > 0 ? '▲' : delta < 0 ? '▼' : '—';
+  const arrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '=';
   return (
     <div className="week-summary-card">
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
           <div className="week-pct">{state.thisWeek}%</div>
-          {delta !== null && <div className={`week-delta ${cls}`}>{arrow} {Math.abs(delta)}% vs semana passada</div>}
+          {delta !== null && <div className={`week-delta ${cls}`}>{arrow} {Math.abs(delta)} pts</div>}
         </div>
-        <div className="week-label">concluído nos últimos 7 dias</div>
+        <div className="week-label">concluído nos últimos 7 dias{delta !== null ? ', comparado à semana anterior' : ''}</div>
         <div className="week-bar-track"><div className="week-bar-fill" style={{ width: `${state.thisWeek}%` }} /></div>
       </div>
     </div>

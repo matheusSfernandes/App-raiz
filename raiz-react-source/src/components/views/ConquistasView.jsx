@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import { computeAchievements, TIER_COLORS, ACHIEVEMENTS } from '../../lib/achievements';
 import { sb } from '../../lib/supabaseClient';
+import { LockIcon } from '../ui/Icons';
 
 export default function ConquistasView() {
   const { habits, transactions, profile, user } = useAppData();
@@ -45,7 +46,7 @@ export default function ConquistasView() {
           </div>
           <div className="level-bar-track"><div className="level-bar-fill" style={{ width: `${info.barPct}%` }} /></div>
           <div className="level-next">
-            {info.nextLevel ? `${info.nextLevel.min - info.totalPoints} pts para ${info.nextLevel.icon} ${info.nextLevel.name}` : 'Nível máximo alcançado! 🎉'}
+            {info.nextLevel ? `${info.nextLevel.min - info.totalPoints} pts para ${info.nextLevel.icon} ${info.nextLevel.name}` : 'Nível máximo alcançado'}
           </div>
         </div>
       )}
@@ -54,9 +55,9 @@ export default function ConquistasView() {
           const tc = TIER_COLORS[a.tier];
           return (
             <div className={`ach-card ${a.unlocked ? 'unlocked' : ''}`} key={a.id}>
-              <div className={`trophy ${a.unlocked ? 'unlocked' : 'locked'}`} style={{ '--tier-color': tc.color, '--tier-dark': tc.dark, '--tier-glow': tc.glow }}>
+              <div className={`trophy ${a.unlocked ? 'unlocked' : 'locked'}`} style={{ '--tier-color': tc.color }}>
                 <span className="trophy-icon">{a.icon}</span>
-                {!a.unlocked && <span className="lock-badge">🔒</span>}
+                {!a.unlocked && <span className="lock-badge"><LockIcon /></span>}
               </div>
               <div className="tier-tag" style={{ color: tc.color }}>{tc.label}</div>
               <div className="ach-title">{a.title}</div>
@@ -65,7 +66,7 @@ export default function ConquistasView() {
                 <div className="ach-pts">+{a.pts} pts</div>
               ) : (
                 <>
-                  <div className="ach-bar-track"><div className="ach-bar-fill" style={{ width: `${(a.current / a.target) * 100}%`, background: tc.color }} /></div>
+                  <div className="ach-bar-track"><div className="ach-bar-fill" style={{ width: `${(a.current / a.target) * 100}%` }} /></div>
                   <div className="ach-pts">{a.current}/{a.target}</div>
                 </>
               )}

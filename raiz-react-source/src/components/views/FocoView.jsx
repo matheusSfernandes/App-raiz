@@ -34,7 +34,7 @@ export default function FocoView() {
       setSessions(n);
     }
     playSuccessSound();
-    showToast(finishedMode === 'work' ? '🎯 Foco concluído! Hora da pausa.' : '☕ Pausa concluída! Hora de focar.');
+    showToast(finishedMode === 'work' ? 'Foco concluído. Hora da pausa.' : 'Pausa concluída. Hora de focar.');
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification('Raiz 🌱', { body: finishedMode === 'work' ? 'Sessão de foco concluída!' : 'Pausa concluída!', icon: 'icon.svg' });
     }
@@ -71,32 +71,31 @@ export default function FocoView() {
   const pct = 1 - remaining / total;
   const mins = String(Math.floor(remaining / 60)).padStart(2, '0');
   const secs = String(remaining % 60).padStart(2, '0');
-  const size = 220, cx = size / 2, cy = size / 2, r = 92, w = 14;
+  const size = 220, cx = size / 2, cy = size / 2, r = 96, w = 6;
   const circ = 2 * Math.PI * r;
   const offset = circ * (1 - pct);
-  const color = mode === 'work' ? '#FF3D81' : '#2FE6E6';
 
   return (
     <div className="view active">
       <div className="section-title">Modo Foco</div>
       <div className="focus-mode-toggle">
-        <button className={`focus-mode-btn ${mode === 'work' ? 'active' : ''}`} onClick={() => switchMode('work')}>🎯 Foco (25min)</button>
-        <button className={`focus-mode-btn ${mode === 'break' ? 'active' : ''}`} onClick={() => switchMode('break')}>☕ Pausa (5min)</button>
+        <button className={`focus-mode-btn ${mode === 'work' ? 'active' : ''}`} onClick={() => switchMode('work')}>Foco · 25 min</button>
+        <button className={`focus-mode-btn ${mode === 'break' ? 'active' : ''}`} onClick={() => switchMode('break')}>Pausa · 5 min</button>
       </div>
       <div className="focus-timer-wrap">
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-          <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={w} />
-          <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={w}
+          <circle className="focus-track" cx={cx} cy={cy} r={r} fill="none" strokeWidth={w} />
+          <circle className={`focus-fill ${mode === 'break' ? 'break' : ''}`} cx={cx} cy={cy} r={r} fill="none" strokeWidth={w}
             strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
             transform={`rotate(-90 ${cx} ${cy})`} style={{ transition: 'stroke-dashoffset 1s linear' }} />
-          <text x={cx} y={cy + 14} textAnchor="middle" fontFamily="Fredoka, sans-serif" fontWeight="700" fontSize="42" fill="#FFFFFF">{mins}:{secs}</text>
+          <text className="focus-time" x={cx} y={cy + 14} textAnchor="middle" fontSize="42">{mins}:{secs}</text>
         </svg>
       </div>
       <div className="focus-controls">
-        <button className="btn ghost" onClick={resetTimer}>↺ Reiniciar</button>
-        <button className="btn" onClick={toggleTimer}>{running ? '⏸ Pausar' : '▶ Começar'}</button>
+        <button className="btn ghost" onClick={resetTimer}>Reiniciar</button>
+        <button className="btn" onClick={toggleTimer}>{running ? 'Pausar' : 'Começar'}</button>
       </div>
-      <div className="focus-session-count">{sessions} sessão{sessions === 1 ? '' : 'ões'} de foco hoje</div>
+      <div className="focus-session-count">{sessions} {sessions === 1 ? 'sessão' : 'sessões'} de foco hoje</div>
     </div>
   );
 }

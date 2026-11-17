@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useAppData } from '../../context/AppDataContext';
-import { todayKey } from '../../lib/helpers';
+import { todayKey, formatKeyBR } from '../../lib/helpers';
+import { TrashIcon } from '../ui/Icons';
+
+const brl = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 function BudgetCard() {
   const { profile, transactions } = useAppData();
@@ -11,14 +14,14 @@ function BudgetCard() {
     .filter(t => t.type === 'out' && t.date_key.slice(0, 7) === monthKey)
     .reduce((s, t) => s + Number(t.amount), 0);
   const pct = Math.min(100, Math.round((spent / limit) * 100));
-  let barColor = 'var(--moss)', statusMsg = '';
-  if (pct >= 100) { barColor = 'var(--danger)'; statusMsg = '⚠️ Você estourou o orçamento do mês!'; }
-  else if (pct >= 80) { barColor = 'var(--amber)'; statusMsg = '⚠️ Perto do limite mensal.'; }
+  let barColor = 'var(--accent)', statusMsg = '';
+  if (pct >= 100) { barColor = 'var(--danger)'; statusMsg = 'Você passou do orçamento do mês.'; }
+  else if (pct >= 80) { barColor = 'var(--warn)'; statusMsg = 'Perto do limite mensal.'; }
   return (
     <div className="budget-card">
       <div className="budget-top">
         <div className="budget-label">Orçamento do mês</div>
-        <div className="budget-values">R${spent.toFixed(0)} <span>/ R${Number(limit).toFixed(0)}</span></div>
+        <div className="budget-values">{brl(spent)} <span>/ {brl(limit)}</span></div>
       </div>
       <div className="budget-bar-track"><div className="budget-bar-fill" style={{ width: `${pct}%`, background: barColor }} /></div>
       {statusMsg && <div className="budget-alert">{statusMsg}</div>}
@@ -64,7 +67,7 @@ export default function FinancasView() {
 
   return (
     <div className="view active">
-      <div className="balance-hero"><div className="l">Saldo atual</div><div className="v">R$ {balance.toFixed(2)}</div></div>
+      <div className="balance-hero"><div className="l">Saldo atual</div><div className={`v ${balance < 0 ? 'neg' : ''}`}>{brl(balance)}</div></div>
       <BudgetCard />
       {!formOpen && <button className="add-toggle" style={{ marginTop: 16 }} onClick={() => setFormOpen(true)}>+ Novo registro</button>}
       {formOpen && <TxForm onCancel={() => setFormOpen(false)} />}
@@ -73,18 +76,18 @@ export default function FinancasView() {
       {transactions.length === 0 ? (
         <div className="empty">Nenhuma movimentação registrada ainda.</div>
       ) : (
-        transactions.map(t => (
+        <div className="tx-list">{transactions.map(t => (
           <div className="tx-row" key={t.id}>
             <div>
               <div className="tx-desc">{t.description}</div>
-              <div className="tx-date">{new Date(t.date_key).toLocaleDateString('pt-BR')}</div>
+              <div className="tx-date">{formatKeyBR(t.date_key)}</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div className={`tx-amt ${t.type}`}>{t.type === 'in' ? '+' : '-'} R${Number(t.amount).toFixed(2)}</div>
-              <button className="del-btn" onClick={() => { if (confirm('Apagar essa movimentação financeira?')) deleteTx(t.id); }}>×</button>
+              <div className={`tx-amt ${t.type}`}>{t.type === 'in' ? '+' : '−'} {brl(t.amount)}</div>
+              <button className="del-btn" aria-label="Apagar" onClick={() => { if (confirm('Apagar essa movimentação financeira?')) deleteTx(t.id); }}><TrashIcon /></button>
             </div>
           </div>
-        ))
+        ))}</div>
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import { CATEGORIES, DAY_LETTERS, todayKey } from '../../lib/helpers';
-import { CheckIcon } from '../ui/Icons';
+import { CheckIcon, FlameIcon, PencilIcon, TrashIcon } from '../ui/Icons';
 import { burstConfetti, playSuccessSound } from '../../lib/effects';
 
 function HabitForm({ editing, onCancel }) {
@@ -57,17 +57,16 @@ function HabitRow({ habit, onEdit }) {
   }
 
   return (
-    <div className={`row ${done ? 'done' : ''}`} style={!scheduledToday ? { opacity: .55 } : undefined}>
+    <div className={`row ${done ? 'done' : ''} ${!scheduledToday ? 'off' : ''}`}>
       <button className={`check ${done ? 'checked' : ''}`} disabled={!scheduledToday}
-        style={!scheduledToday ? { cursor: 'not-allowed', opacity: .4 } : undefined}
-        onClick={handleToggle}><CheckIcon /></button>
+        aria-label={done ? 'Desmarcar' : 'Concluir'} onClick={handleToggle}><CheckIcon /></button>
       <div className="row-body">
         <div className="title"><span className="category-tag">{habit.category || 'Geral'}</span>{habit.name}</div>
         <div className="meta">{habit.time || 'sem horário'} · {daysLabel}</div>
       </div>
-      <div className="streak-pill">🔥 {habit.streak}</div>
-      <button className="edit-btn" onClick={() => onEdit(habit)}>✎</button>
-      <button className="del-btn" onClick={() => { if (confirm(`Apagar o hábito "${habit.name}"? Isso também apaga o histórico dele.`)) deleteHabit(habit.id); }}>×</button>
+      <div className={`streak-pill ${habit.streak >= 3 ? 'hot' : ''}`} title="Sequência"><FlameIcon />{habit.streak}</div>
+      <button className="edit-btn" aria-label="Editar" onClick={() => onEdit(habit)}><PencilIcon /></button>
+      <button className="del-btn" aria-label="Apagar" onClick={() => { if (confirm(`Apagar o hábito "${habit.name}"? Isso também apaga o histórico dele.`)) deleteHabit(habit.id); }}><TrashIcon /></button>
     </div>
   );
 }

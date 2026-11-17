@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
-import { CATEGORIES, PRIORITY_DOT, categorizeTask, todayKey, dateToKey } from '../../lib/helpers';
-import { CheckIcon } from '../ui/Icons';
+import { CATEGORIES, categorizeTask, todayKey, dateToKey } from '../../lib/helpers';
+import { CheckIcon, FlagIcon, PencilIcon, TrashIcon, CalendarIcon, ListIcon, MoreIcon } from '../ui/Icons';
 import { burstConfetti, playSuccessSound } from '../../lib/effects';
 
 function formatDateLabel(dateKey) {
@@ -47,7 +47,7 @@ function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
       <input type="text" placeholder="Notas (opcional)" value={notes} onChange={e => setNotes(e.target.value)} />
       <label className="flag-check">
         <input type="checkbox" checked={hasDate} onChange={e => setHasDate(e.target.checked)} />
-        <span>📅 Tem data definida</span>
+        <span>Tem data definida</span>
       </label>
       {hasDate && (
         <>
@@ -63,13 +63,13 @@ function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
       </select>
       <select value={priority} onChange={e => setPriority(e.target.value)}>
         <option value="none">Sem prioridade</option>
-        <option value="alta">🔴 Alta prioridade</option>
-        <option value="media">🟡 Média prioridade</option>
-        <option value="baixa">🟢 Baixa prioridade</option>
+        <option value="alta">Prioridade alta</option>
+        <option value="media">Prioridade média</option>
+        <option value="baixa">Prioridade baixa</option>
       </select>
       <label className="flag-check">
         <input type="checkbox" checked={flagged} onChange={e => setFlagged(e.target.checked)} />
-        <span>🚩 Fixar esta tarefa</span>
+        <span>Fixar esta tarefa</span>
       </label>
       <div className="btn-row">
         <button className="btn" onClick={handleSave}>Salvar</button>
@@ -105,7 +105,7 @@ function SubtaskPanel({ task, subs, onChanged }) {
           <div key={s.id} className={`subtask-row ${s.done ? 'done' : ''}`}>
             <button className={`check small ${s.done ? 'checked' : ''}`} onClick={() => toggle(s)}><CheckIcon /></button>
             <span className="subtask-title">{s.title}</span>
-            <button className="del-btn" onClick={() => remove(s.id)}>×</button>
+            <button className="del-btn" aria-label="Apagar subtarefa" onClick={() => remove(s.id)}><TrashIcon /></button>
           </div>
         ))}
         <div className="subtask-add">
@@ -125,7 +125,7 @@ function RescheduleRow({ task, onReschedule, onCancel }) {
     <div className="reschedule-row">
       <input type="date" value={date} onChange={e => setDate(e.target.value)} />
       <button className="subtask-save-btn" onClick={() => onReschedule(task.id, date)}>Mover</button>
-      <button className="del-btn" onClick={onCancel}>×</button>
+      <button className="del-btn" aria-label="Cancelar" onClick={onCancel}>×</button>
     </div>
   );
 }
@@ -134,6 +134,7 @@ function TaskRow({ task, subs, isToday, showReschedule, onEdit, onChanged }) {
   const { toggleTask, deleteTask, rescheduleTask, saveTask } = useAppData();
   const [subOpen, setSubOpen] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const subsDone = subs.filter(s => s.done).length;
 
   async function handleToggle(evt) {
@@ -158,21 +159,27 @@ function TaskRow({ task, subs, isToday, showReschedule, onEdit, onChanged }) {
         <button className={`check ${task.done ? 'checked' : ''}`} onClick={handleToggle}><CheckIcon /></button>
         <div className="row-body">
           <div className="title">
-            {task.flagged && '🚩 '}
-            {PRIORITY_DOT[task.priority || 'none']} <span className="category-tag">{task.category || 'Geral'}</span>{task.title}
+            {task.flagged && <span className="flag-mark"><FlagIcon /></span>}
+            {task.priority && task.priority !== 'none' && <span className={`prio-dot ${task.priority}`} />}
+            <span className="category-tag">{task.category || 'Geral'}</span>{task.title}
           </div>
           <div className="meta">
             {task.date_key ? `${task.start_time || '--:--'}${task.end_time ? ' - ' + task.end_time : ''}` : 'Sem data'}
-            {subs.length ? ` · 📋 ${subsDone}/${subs.length}` : ''}
+            {subs.length ? ` · ${subsDone}/${subs.length} subtarefas` : ''}
             {task.notes ? ` · ${task.notes}` : ''}
           </div>
         </div>
-        {!task.done && showReschedule && <button className="edit-btn" onClick={() => setRescheduling(o => !o)}>📅</button>}
-        <button className="edit-btn" onClick={handleToggleFlag} style={{ color: task.flagged ? 'var(--amber)' : undefined }}>🚩</button>
-        <button className="edit-btn" onClick={() => setSubOpen(o => !o)}>📋</button>
-        <button className="edit-btn" onClick={() => onEdit(task)}>✎</button>
-        <button className="del-btn" onClick={() => { if (confirm(`Apagar "${task.title}"?`)) { deleteTask(task.id); onChanged(); } }}>×</button>
+        <button className={`edit-btn ${menuOpen ? 'active' : ''}`} aria-label="Mais ações" onClick={() => setMenuOpen(o => !o)}><MoreIcon /></button>
       </div>
+      {menuOpen && (
+        <div className="row-menu">
+          {!task.done && showReschedule && <button onClick={() => { setRescheduling(o => !o); setMenuOpen(false); }}><CalendarIcon />Reagendar</button>}
+          <button className={task.flagged ? 'on' : ''} onClick={handleToggleFlag}><FlagIcon />{task.flagged ? 'Desafixar' : 'Fixar'}</button>
+          <button onClick={() => { setSubOpen(o => !o); setMenuOpen(false); }}><ListIcon />Subtarefas</button>
+          <button onClick={() => { setMenuOpen(false); onEdit(task); }}><PencilIcon />Editar</button>
+          <button className="danger" onClick={() => { if (confirm(`Apagar "${task.title}"?`)) { deleteTask(task.id); onChanged(); } }}><TrashIcon />Apagar</button>
+        </div>
+      )}
       {rescheduling && <RescheduleRow task={task} onReschedule={handleReschedule} onCancel={() => setRescheduling(false)} />}
       {subOpen && <SubtaskPanel task={task} subs={subs} onChanged={onChanged} />}
     </>
@@ -255,25 +262,25 @@ export default function RotinaView() {
 
   const sections = noDateMode
     ? [
-        { key: 'flagged', label: '🚩 Fixadas' },
-        { key: 'pending', label: '📌 Pendentes' },
-        { key: 'done', label: '✅ Concluídas' },
+        { key: 'flagged', label: 'Fixadas' },
+        { key: 'pending', label: 'Pendentes' },
+        { key: 'done', label: 'Concluídas' },
       ]
     : isToday
     ? [
-        { key: 'inprogress', label: '🔄 Em progresso' },
-        { key: 'overdue', label: '⚠️ Atrasadas' },
-        { key: 'upcoming', label: '⏰ Próximas' },
-        { key: 'done', label: '✅ Concluídas' },
+        { key: 'inprogress', label: 'Em andamento' },
+        { key: 'overdue', label: 'Atrasadas' },
+        { key: 'upcoming', label: 'Próximas' },
+        { key: 'done', label: 'Concluídas' },
       ]
     : viewedDate < todayKey()
     ? [
-        { key: 'overdue', label: '⚠️ Não realizadas' },
-        { key: 'done', label: '✅ Concluídas' },
+        { key: 'overdue', label: 'Não realizadas' },
+        { key: 'done', label: 'Concluídas' },
       ]
     : [
-        { key: 'upcoming', label: '📅 Planejadas' },
-        { key: 'done', label: '✅ Concluídas' },
+        { key: 'upcoming', label: 'Planejadas' },
+        { key: 'done', label: 'Concluídas' },
       ];
 
   function openNew() { setEditing(null); setFormOpen(true); }
@@ -292,18 +299,19 @@ export default function RotinaView() {
       <div className="day-nav">
         {!noDateMode && <button className="cal-arrow" onClick={() => changeDay(-1)}>‹</button>}
         <div className="day-nav-label">
-          {noDateMode ? '📌 Sem data' : formatDateLabel(viewedDate)}
+          {noDateMode ? 'Sem data' : formatDateLabel(viewedDate)}
           {(noDateMode || !isToday) && <button className="day-nav-today" onClick={goToday}>Hoje</button>}
         </div>
         {!noDateMode && <button className="cal-arrow" onClick={() => changeDay(1)}>›</button>}
       </div>
-      <button className="add-toggle" style={{ marginBottom: 14 }} onClick={() => setNoDateMode(m => !m)}>
-        {noDateMode ? '📅 Ver por data' : '📌 Ver tarefas sem data'}
-      </button>
+      <div className="segmented">
+        <button className={`seg-btn ${!noDateMode ? 'active' : ''}`} onClick={() => setNoDateMode(false)}>Por data</button>
+        <button className={`seg-btn ${noDateMode ? 'active' : ''}`} onClick={() => setNoDateMode(true)}>Sem data</button>
+      </div>
 
       {isToday && nextTask && (
         <div className="next-task-card">
-          <div className="next-task-label">🎯 Próxima tarefa</div>
+          <div className="next-task-label">Próxima tarefa</div>
           <div className="next-task-title">{nextTask.title}</div>
           <div className="next-task-meta">{nextTask.start_time || '--:--'}{nextTask.end_time ? ` - ${nextTask.end_time}` : ''}</div>
         </div>
@@ -317,7 +325,7 @@ export default function RotinaView() {
       ) : (
         sections.filter(s => groups[s.key] && groups[s.key].length).map(s => (
           <div className="routine-group" key={s.key}>
-            <div className={`routine-group-header ${s.key === 'flagged' || s.key === 'pending' ? 'neutral' : s.key}`}>{s.label}</div>
+            <div className={`routine-group-header ${s.key === 'pending' ? 'neutral' : s.key}`}>{s.label}</div>
             <div className="routine-group-body">
               {groups[s.key].map(t => (
                 <TaskRow key={t.id} task={t} subs={subtasksByTask[t.id] || []} isToday={isToday} showReschedule={!noDateMode && !isToday} onEdit={openEdit} onChanged={refresh} />
