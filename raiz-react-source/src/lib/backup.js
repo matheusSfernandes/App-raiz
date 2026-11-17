@@ -6,6 +6,8 @@ const TABLES = [
   ['Perfil', 'profiles', 'id'],
   ['Hábitos', 'habits', 'user_id'],
   ['Registro de hábitos', 'habit_logs', 'user_id'],
+  ['Progresso de hábitos', 'habit_progress', 'user_id'],
+  ['Tarefas recorrentes', 'recurring_tasks', 'user_id'],
   ['Tarefas', 'tasks', 'user_id'],
   ['Subtarefas', 'subtasks', 'user_id'],
   ['Finanças', 'transactions', 'user_id'],

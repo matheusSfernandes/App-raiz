@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
 import { todayKey, todayHabits, dateToKey, AREA_COLORS } from '../../lib/helpers';
+import { countsOnDay } from '../../lib/habits';
 
 function GoalCard({ profile }) {
   const { goal_label, goal_date } = profile;
@@ -137,14 +138,10 @@ function WeeklySummaryCard() {
         for (let i = offsetStart; i <= offsetEnd; i++) {
           const d = new Date(today); d.setDate(d.getDate() - i);
           const key = dateToKey(d);
-          const dow = d.getDay();
-          const scheduled = habits.filter(h => {
-            const days = h.days_of_week || [0, 1, 2, 3, 4, 5, 6];
-            if (!days.includes(dow)) return false;
-            if (h.created_at && new Date(h.created_at) > d) return false;
-            return true;
-          });
-          const doneHabits = (logs || []).filter(l => l.date_key === key).length;
+          const logged = new Set((logs || []).filter(l => l.date_key === key).map(l => l.habit_id));
+          const endOfDay = new Date(d); endOfDay.setHours(23, 59);
+          const scheduled = habits.filter(h => countsOnDay(h, endOfDay, logged.has(h.id)));
+          const doneHabits = scheduled.filter(h => logged.has(h.id)).length;
           const dayTasks = (rangeTasks || []).filter(t => t.date_key === key);
           total += scheduled.length + dayTasks.length;
           done += doneHabits + dayTasks.filter(t => t.done).length;

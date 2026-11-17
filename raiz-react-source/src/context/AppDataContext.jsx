@@ -1,9 +1,28 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { sb } from '../lib/supabaseClient';
-import { todayKey, dateToKey, previousScheduledDate } from '../lib/helpers';
+import { todayKey, previousScheduledDate } from '../lib/helpers';
 import { materializeRecurring } from '../lib/recurring';
+import { currentStreak, isFlexible, isNumeric, weekStartKey } from '../lib/habits';
 
 const AppDataContext = createContext(null);
+
+// Recalcula sequência e último dia feito a partir do registro de hábitos
+// (dias protegidos por congelamento contam como feitos)
+async function recomputeHabitRow(habit, freezeLog) {
+  const { data: logs } = await sb.from('habit_logs').select('date_key').eq('habit_id', habit.id).order('date_key', { ascending: false }).limit(1000);
+  const ok = new Set((logs || []).map(l => l.date_key));
+  (freezeLog || []).forEach(entry => {
+    const [date, hid] = String(entry).split('|');
+    if (hid === habit.id) ok.add(date);
+  });
+  const today = todayKey();
+  const streak = currentStreak(habit, ok);
+  const lastDone = [...ok].filter(k => k <= today).sort().pop() || null;
+  if (streak !== habit.streak || lastDone !== habit.last_done) {
+    await sb.from('habits').update({ streak, last_done: lastDone }).eq('id', habit.id);
+  }
+  return { ...habit, streak, last_done: lastDone };
+}
 
 export function useAppData() {
   return useContext(AppDataContext);
@@ -34,6 +53,7 @@ export function AppDataProvider({ user, children }) {
 
     for (let i = 0; i < updated.length; i++) {
       const h = updated[i];
+      if (isFlexible(h)) continue;
       if (!h.last_done) continue;
       const prevScheduled = previousScheduledDate(h, new Date());
       if (!prevScheduled) continue;
@@ -83,7 +103,19 @@ export function AppDataProvider({ user, children }) {
       });
     }
 
-    const fixedHabits = await checkStreakBreaks(habitsData || [], prof);
+    let fixedHabits = await checkStreakBreaks(habitsData || [], prof);
+    // Flexíveis: a sequência é em semanas, então recalcula ao abrir (vira a semana)
+    fixedHabits = await Promise.all(fixedHabits.map(h => (isFlexible(h) ? recomputeHabitRow(h, prof.freeze_log) : h)));
+    const today = todayKey();
+    const [{ data: weekLogs }, { data: progressRows }] = await Promise.all([
+      sb.from('habit_logs').select('habit_id').eq('user_id', user.id).gte('date_key', weekStartKey(today)).lte('date_key', today),
+      sb.from('habit_progress').select('habit_id,value').eq('user_id', user.id).eq('date_key', today),
+    ]);
+    const weekCount = {};
+    (weekLogs || []).forEach(l => { weekCount[l.habit_id] = (weekCount[l.habit_id] || 0) + 1; });
+    const progress = {};
+    (progressRows || []).forEach(p => { progress[p.habit_id] = Number(p.value); });
+    fixedHabits = fixedHabits.map(h => ({ ...h, week_count: weekCount[h.id] || 0, progress_today: progress[h.id] || 0 }));
 
     setProfile(prof);
     setHabits(fixedHabits);
@@ -104,34 +136,7 @@ export function AppDataProvider({ user, children }) {
     }
     await refreshAll();
   };
-  // Recalcula sequência e último dia feito a partir do registro de hábitos
-  // (dias protegidos por congelamento contam como feitos)
-  const recomputeHabit = async (habit) => {
-    const { data: logs } = await sb.from('habit_logs').select('date_key').eq('habit_id', habit.id).order('date_key', { ascending: false }).limit(400);
-    const ok = new Set((logs || []).map(l => l.date_key));
-    (profile.freeze_log || []).forEach(entry => {
-      const [date, hid] = String(entry).split('|');
-      if (hid === habit.id) ok.add(date);
-    });
-    const days = habit.days_of_week || [0, 1, 2, 3, 4, 5, 6];
-    const created = habit.created_at ? dateToKey(new Date(habit.created_at)) : '0000-00-00';
-    const today = todayKey();
-    const cursor = new Date(today + 'T12:00:00');
-    let streak = 0;
-    let first = true;
-    for (let i = 0; i < 400; i++) {
-      const key = dateToKey(cursor);
-      if (key < created) break;
-      if (days.includes(cursor.getDay())) {
-        if (ok.has(key)) streak++;
-        else if (!(first && key === today)) break;
-        first = false;
-      }
-      cursor.setDate(cursor.getDate() - 1);
-    }
-    const lastDone = [...ok].filter(k => k <= today).sort().pop() || null;
-    await sb.from('habits').update({ streak, last_done: lastDone }).eq('id', habit.id);
-  };
+  const recomputeHabit = (habit) => recomputeHabitRow(habit, profile.freeze_log);
   const setHabitDone = async (id, dateKey, done) => {
     const h = habits.find(x => x.id === id);
     if (!h) return false;
@@ -143,6 +148,20 @@ export function AppDataProvider({ user, children }) {
     await recomputeHabit(h);
     await refreshAll();
     return done;
+  };
+  // Soma (ou tira) quantidade no progresso do dia; conclui ao bater a meta
+  const addHabitProgress = async (id, amount, dateKey = todayKey()) => {
+    const h = habits.find(x => x.id === id);
+    if (!h || !isNumeric(h)) return false;
+    const { data: row } = await sb.from('habit_progress').select('value').eq('habit_id', id).eq('date_key', dateKey).maybeSingle();
+    const before = Number(row?.value || 0);
+    const value = Math.max(0, before + Number(amount));
+    await sb.from('habit_progress').upsert({ user_id: user.id, habit_id: id, date_key: dateKey, value, updated_at: new Date().toISOString() }, { onConflict: 'habit_id,date_key' });
+    const target = Number(h.target);
+    const wasDone = before >= target, isDone = value >= target;
+    if (wasDone !== isDone) { await setHabitDone(id, dateKey, isDone); return isDone && !wasDone; }
+    await refreshAll();
+    return false;
   };
   const toggleHabit = async (id) => {
     const h = habits.find(x => x.id === id);
@@ -216,7 +235,7 @@ export function AppDataProvider({ user, children }) {
   const value = {
     user, profile, habits, tasks, transactions, subtasksByTask, loading,
     toasts, showToast, refreshAll,
-    saveHabit, toggleHabit, setHabitDone, deleteHabit,
+    saveHabit, toggleHabit, setHabitDone, addHabitProgress, deleteHabit,
     saveTask, toggleTask, deleteTask, rescheduleTask,
     addSubtask, toggleSubtask, deleteSubtask,
     addTx, deleteTx,

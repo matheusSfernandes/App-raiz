@@ -28,9 +28,15 @@ export function escapeHtml(str) {
   return String(str ?? '');
 }
 
+// Hábitos que valem para hoje. Flexível (X vezes por semana): aparece enquanto a meta
+// da semana não foi batida, ou se já foi feito hoje.
 export function todayHabits(habits) {
   const dow = new Date().getDay();
-  return habits.filter(h => (h.days_of_week || [0, 1, 2, 3, 4, 5, 6]).includes(dow));
+  const today = todayKey();
+  return habits.filter(h => {
+    if (h.weekly_target) return h.last_done === today || (h.week_count || 0) < h.weekly_target;
+    return (h.days_of_week || [0, 1, 2, 3, 4, 5, 6]).includes(dow);
+  });
 }
 
 export function previousScheduledDate(habit, fromDate) {

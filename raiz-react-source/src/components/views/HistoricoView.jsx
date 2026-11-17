@@ -3,6 +3,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
 import { dateToKey, todayKey } from '../../lib/helpers';
 import { CheckIcon } from '../ui/Icons';
+import { countsOnDay, isFlexible } from '../../lib/habits';
 
 function heatClass(pct) {
   if (pct === null || pct === undefined || pct === 0) return 'heat-0';
@@ -38,14 +39,9 @@ export default function HistoricoView() {
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(year, month, d);
       const key = dateToKey(date);
-      const dow = date.getDay();
-      const scheduled = habits.filter(h => {
-        const days = h.days_of_week || [0, 1, 2, 3, 4, 5, 6];
-        if (!days.includes(dow)) return false;
-        if (h.created_at && new Date(h.created_at) > date) return false;
-        return true;
-      });
-      const doneHabits = (logs || []).filter(l => l.date_key === key).length;
+      const logged = new Set((logs || []).filter(l => l.date_key === key).map(l => l.habit_id));
+      const scheduled = habits.filter(h => countsOnDay(h, new Date(year, month, d, 23, 59), logged.has(h.id)));
+      const doneHabits = scheduled.filter(h => logged.has(h.id)).length;
       const dayTasks = (monthTasks || []).filter(t => t.date_key === key);
       const total = scheduled.length + dayTasks.length;
       const done = doneHabits + dayTasks.filter(t => t.done).length;
@@ -78,7 +74,7 @@ export default function HistoricoView() {
     ]);
     const loggedIds = (dayLogs || []).map(l => l.habit_id);
     const dow = new Date(key + 'T12:00:00').getDay();
-    const scheduledHabits = habits.filter(h => (h.days_of_week || [0, 1, 2, 3, 4, 5, 6]).includes(dow));
+    const scheduledHabits = habits.filter(h => isFlexible(h) || (h.days_of_week || [0, 1, 2, 3, 4, 5, 6]).includes(dow));
     setDayDetail({ tasks: dayTasks || [], habits: scheduledHabits, loggedIds });
   }
 
