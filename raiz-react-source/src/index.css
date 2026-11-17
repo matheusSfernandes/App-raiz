@@ -487,6 +487,38 @@ button { font-family: inherit; }
 .focus-controls .btn { width: auto; padding: 11px 22px; }
 .focus-session-count { text-align: center; margin-top: 18px; font-size: 13px; color: var(--ink-soft); }
 
+/* ============ Treino ============ */
+.ex-head, .ex-row { display: grid; grid-template-columns: minmax(0,1fr) 58px 58px 30px; gap: 6px; align-items: center; }
+.ex-head { font-size: 12px; color: var(--ink-faint); margin: 4px 2px 4px; }
+.add-form .ex-row input { margin-bottom: 6px; }
+.add-form .ex-row input[type="number"] { text-align: center; padding-left: 4px; padding-right: 4px; }
+.workout-ex {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px; margin-bottom: 10px;
+}
+.workout-ex-top { margin-bottom: 8px; }
+.set-head, .set-row { display: grid; grid-template-columns: 40px minmax(0,1fr) minmax(0,1fr) 32px; gap: 8px; align-items: center; }
+.set-head { font-size: 12px; color: var(--ink-faint); margin-bottom: 4px; text-align: center; }
+.set-row { margin-bottom: 6px; }
+.set-n { font-size: 13px; font-weight: 600; color: var(--ink-soft); text-align: center; font-variant-numeric: tabular-nums; }
+.set-row input {
+  width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; text-align: center;
+  font-size: 14px; font-family: inherit; background: var(--bg); color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.set-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.set-row.done input { background: var(--accent-soft); border-color: transparent; color: var(--ink-soft); }
+.set-row .check { justify-self: center; }
+.link-btn { background: none; border: none; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 0; }
+.plain-select {
+  width: 100%; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 9px 12px; margin: 4px 0 10px;
+  font-size: 14px; font-family: inherit; background: var(--bg); color: var(--ink);
+}
+.progress-chart .grid { stroke: var(--line); stroke-width: 1; }
+.progress-chart .axis { fill: var(--ink-faint); font-size: 10px; font-family: 'Inter', sans-serif; }
+.progress-chart .line { stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.progress-chart .dot { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+.btn:disabled { opacity: .6; cursor: default; }
+
 /* ============ Finanças ============ */
 .balance-hero {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);

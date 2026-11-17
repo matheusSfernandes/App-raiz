@@ -4,6 +4,7 @@ import { todayKey } from '../../lib/helpers';
 import { computeAchievements } from '../../lib/achievements';
 import { sb } from '../../lib/supabaseClient';
 import { getTheme, setTheme } from '../../lib/theme';
+import { downloadBackup } from '../../lib/backup';
 
 function emptyDraft(profile) {
   return {
@@ -17,7 +18,19 @@ function emptyDraft(profile) {
 }
 
 export default function PerfilView({ onNavigate }) {
-  const { profile, habits, transactions, user, saveProfile } = useAppData();
+  const { profile, habits, transactions, user, saveProfile, showToast } = useAppData();
+  const [backingUp, setBackingUp] = useState(false);
+  async function handleBackup() {
+    if (backingUp) return;
+    setBackingUp(true);
+    try {
+      const n = await downloadBackup(user.id);
+      showToast(`Backup baixado: ${n} registros.`);
+    } catch {
+      showToast('Não deu para gerar o backup. Tente de novo.');
+    }
+    setBackingUp(false);
+  }
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(emptyDraft(profile));
   const [notifEnabled, setNotifEnabled] = useState(localStorage.getItem('raiz_notif_enabled') === '1');
@@ -161,6 +174,12 @@ export default function PerfilView({ onNavigate }) {
       <button className="setting-row" onClick={toggleSound}>
         <div><div className="setting-text">Som ao concluir</div><div className="setting-sub">Um toque curto ao marcar algo como feito</div></div>
         <span className={`switch ${soundEnabled ? 'on' : ''}`} />
+      </button>
+
+      <div className="section-title">Seus dados</div>
+      <button className="setting-row link-row" onClick={handleBackup} disabled={backingUp}>
+        <div><div className="setting-text">{backingUp ? 'Gerando backup…' : 'Baixar backup'}</div><div className="setting-sub">Planilha com hábitos, tarefas, finanças e treinos</div></div>
+        <span className="chev">↓</span>
       </button>
 
       <div className="section-title">Nível</div>
