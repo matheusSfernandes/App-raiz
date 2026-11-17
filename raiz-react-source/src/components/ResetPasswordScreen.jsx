@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { sb } from '../lib/supabaseClient';
-import { EyeIcon, EyeOffIcon } from './ui/Icons';
+import { EyeIcon, EyeOffIcon, LogoMark } from './ui/Icons';
 
 function PasswordInput({ value, onChange, placeholder }) {
   const [show, setShow] = useState(false);
@@ -32,6 +32,7 @@ export default function ResetPasswordScreen({ onDone }) {
   if (success) {
     return (
       <div className="auth-screen" id="authScreen">
+        <LogoMark size={48} />
         <div className="auth-logo">Raiz</div>
         <div className="auth-sub" style={{ color: 'var(--accent)' }}>Senha alterada com sucesso!</div>
         <button className="btn" onClick={onDone}>Continuar</button>
@@ -41,7 +42,8 @@ export default function ResetPasswordScreen({ onDone }) {
 
   return (
     <div className="auth-screen" id="authScreen">
-      <div className="auth-logo">Raiz</div>
+      <LogoMark size={48} />
+        <div className="auth-logo">Raiz</div>
       <div className="auth-sub">Defina sua nova senha.</div>
       <PasswordInput value={password} onChange={e => setPassword(e.target.value)} placeholder="Nova senha" />
       <PasswordInput value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Confirme a nova senha" />

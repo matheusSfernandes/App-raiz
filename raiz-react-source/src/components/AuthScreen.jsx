@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { sb } from '../lib/supabaseClient';
-import { EyeIcon, EyeOffIcon } from './ui/Icons';
+import { EyeIcon, EyeOffIcon, LogoMark } from './ui/Icons';
 
 function PasswordInput({ value, onChange, placeholder, autoComplete }) {
   const [show, setShow] = useState(false);
@@ -64,6 +64,7 @@ export default function AuthScreen() {
 
   return (
     <div className="auth-screen" id="authScreen">
+      <LogoMark size={48} />
       <div className="auth-logo">Raiz</div>
       <div className="auth-sub">{titles[mode]}</div>
       <input type="email" placeholder="E-mail" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} />

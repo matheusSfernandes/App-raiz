@@ -114,7 +114,6 @@ button { font-family: inherit; }
   padding: 32px 24px; max-width: 420px; margin: 0 auto; background: var(--bg);
 }
 .auth-logo { font-size: 32px; font-weight: 700; letter-spacing: -0.03em; color: var(--ink); }
-.auth-logo::after { content: '.'; color: var(--accent); }
 .auth-sub { color: var(--ink-soft); font-size: 14.5px; margin-top: 6px; margin-bottom: 28px; }
 .auth-screen input {
   width: 100%; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px 14px;
@@ -576,8 +575,9 @@ button { font-family: inherit; }
   -webkit-overflow-scrolling: touch; overscroll-behavior: contain; gap: 2px;
 }
 .sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,0.15); }
-.sidebar-logo { font-weight: 700; font-size: 20px; letter-spacing: -0.03em; padding: 4px 12px 20px; color: var(--ink); }
-.sidebar-logo::after { content: '.'; color: var(--accent); }
+.sidebar-logo { font-weight: 700; font-size: 20px; letter-spacing: -0.03em; padding: 4px 12px 20px; color: var(--ink); display: flex; align-items: center; gap: 10px; }
+.logo-mark { display: block; flex-shrink: 0; }
+.auth-screen .logo-mark { margin-bottom: 14px; }
 .sidebar .tab {
   flex-direction: row; justify-content: flex-start; gap: 12px; padding: 10px 12px;
   border-radius: 9px; width: 100%; flex: 0 0 auto; color: var(--ink-soft);

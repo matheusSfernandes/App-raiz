@@ -56,6 +56,16 @@ export function CalendarIcon() {
 export function ListIcon() {
   return (<svg {...S}><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></svg>);
 }
+export function LogoMark({ size = 26 }) {
+  return (
+    <svg className="logo-mark" width={size} height={size} viewBox="0 0 100 100" aria-hidden="true">
+      <rect width="100" height="100" rx="24" fill="var(--accent)" />
+      <g fill="none" stroke="var(--accent-ink)" strokeWidth="6" strokeLinecap="round"><path d="M30 78H70" /><path d="M50 78V48" /></g>
+      <path d="M50 54C50 38 64 30 76 30C76 44 66 54 50 54Z" fill="var(--accent-ink)" />
+      <path d="M50 62C50 50 38 44 26 46C26 56 36 62 50 62Z" fill="var(--accent-ink)" />
+    </svg>
+  );
+}
 export function MoreIcon() {
   return (<svg {...S}><circle cx="5" cy="12" r="1.2" /><circle cx="12" cy="12" r="1.2" /><circle cx="19" cy="12" r="1.2" /></svg>);
 }

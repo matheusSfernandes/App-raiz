@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { sb } from '../lib/supabaseClient';
-import { NAV_ITEMS, NavIcon } from './ui/Icons';
+import { NAV_ITEMS, NavIcon, LogoMark } from './ui/Icons';
 
 export default function Sidebar({ open, onClose, view, onNavigate }) {
   const scrollLockY = useRef(0);
@@ -21,7 +21,7 @@ export default function Sidebar({ open, onClose, view, onNavigate }) {
     <>
       <div className={`sidebar-backdrop ${open ? 'show' : ''}`} onClick={onClose} />
       <div className={`sidebar ${open ? 'open' : ''}`} id="sidebar">
-        <div className="sidebar-logo">Raiz</div>
+        <div className="sidebar-logo"><LogoMark size={26} /><span>Raiz</span></div>
         {NAV_ITEMS.map(item => (
           <button
             key={item.view}
