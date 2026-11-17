@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
-import { CATEGORIES, categorizeTask, todayKey, dateToKey } from '../../lib/helpers';
+import { CATEGORIES, DAY_LETTERS, categorizeTask, todayKey, dateToKey } from '../../lib/helpers';
+import { loadRecurring, materializeRecurring, describeRecurrence } from '../../lib/recurring';
 import { CheckIcon, FlagIcon, PencilIcon, TrashIcon, CalendarIcon, ListIcon, MoreIcon } from '../ui/Icons';
 import { burstConfetti, playSuccessSound } from '../../lib/effects';
 
@@ -14,7 +15,9 @@ function formatDateLabel(dateKey) {
 }
 
 function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
-  const { saveTask } = useAppData();
+  const { saveTask, user } = useAppData();
+  const [repeat, setRepeat] = useState('none');
+  const [repeatDays, setRepeatDays] = useState(() => [new Date((editing?.date_key || defaultDate || todayKey()) + 'T12:00:00').getDay()]);
   const [title, setTitle] = useState(editing?.title || '');
   const [notes, setNotes] = useState(editing?.notes || '');
   const [hasDate, setHasDate] = useState(editing ? !!editing.date_key : !noDateMode);
@@ -28,6 +31,20 @@ function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
   async function handleSave() {
     if (!title.trim()) return;
     const finalDate = hasDate ? date : null;
+    if (!editing && hasDate && repeat !== 'none') {
+      if (repeat === 'weekly' && !repeatDays.length) return;
+      const d = new Date(date + 'T12:00:00');
+      const { data: rule } = await sb.from('recurring_tasks').insert({
+        user_id: user.id, title: title.trim(), notes: notes.trim() || null, category, priority,
+        start_time: start, end_time: end, rule: repeat,
+        days_of_week: repeat === 'weekly' ? repeatDays : null,
+        day_of_month: repeat === 'monthly' ? d.getDate() : null,
+        start_date: date,
+      }).select().single();
+      if (rule) await materializeRecurring(user.id, date < todayKey() ? todayKey() : date, [rule]);
+      onSaved(finalDate);
+      return;
+    }
     await saveTask(editing?.id || null, {
       title: title.trim(),
       notes: notes.trim() || null,
@@ -56,6 +73,22 @@ function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
             <input type="time" value={start} onChange={e => setStart(e.target.value)} />
             <input type="time" value={end} onChange={e => setEnd(e.target.value)} />
           </div>
+          {!editing && (
+            <select value={repeat} onChange={e => setRepeat(e.target.value)}>
+              <option value="none">Não repete</option>
+              <option value="daily">Repete todo dia</option>
+              <option value="weekly">Repete em dias da semana</option>
+              <option value="monthly">Repete todo mês (dia {Number((date || todayKey()).slice(8, 10))})</option>
+            </select>
+          )}
+          {!editing && repeat === 'weekly' && (
+            <div className="day-picker">
+              {DAY_LETTERS.map((letter, i) => (
+                <button type="button" key={i} className={`day-chip ${repeatDays.includes(i) ? 'on' : ''}`}
+                  onClick={() => setRepeatDays(p => p.includes(i) ? p.filter(x => x !== i) : [...p, i])}>{letter}</button>
+              ))}
+            </div>
+          )}
         </>
       )}
       <select value={category} onChange={e => setCategory(e.target.value)}>
@@ -130,7 +163,12 @@ function RescheduleRow({ task, onReschedule, onCancel }) {
   );
 }
 
-function TaskRow({ task, subs, isToday, showReschedule, onEdit, onChanged }) {
+async function stopRecurring(ruleId) {
+  await sb.from('recurring_tasks').update({ active: false }).eq('id', ruleId);
+  await sb.from('tasks').delete().eq('recurring_id', ruleId).eq('done', false).gt('date_key', todayKey());
+}
+
+function TaskRow({ task, subs, rule, showReschedule, onEdit, onChanged }) {
   const { toggleTask, deleteTask, rescheduleTask, saveTask } = useAppData();
   const [subOpen, setSubOpen] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
@@ -166,6 +204,7 @@ function TaskRow({ task, subs, isToday, showReschedule, onEdit, onChanged }) {
           <div className="meta">
             {task.date_key ? `${task.start_time || '--:--'}${task.end_time ? ' - ' + task.end_time : ''}` : 'Sem data'}
             {subs.length ? ` · ${subsDone}/${subs.length} subtarefas` : ''}
+            {rule ? ` · ↻ ${describeRecurrence(rule)}` : ''}
             {task.notes ? ` · ${task.notes}` : ''}
           </div>
         </div>
@@ -177,7 +216,21 @@ function TaskRow({ task, subs, isToday, showReschedule, onEdit, onChanged }) {
           <button className={task.flagged ? 'on' : ''} onClick={handleToggleFlag}><FlagIcon />{task.flagged ? 'Desafixar' : 'Fixar'}</button>
           <button onClick={() => { setSubOpen(o => !o); setMenuOpen(false); }}><ListIcon />Subtarefas</button>
           <button onClick={() => { setMenuOpen(false); onEdit(task); }}><PencilIcon />Editar</button>
-          <button className="danger" onClick={() => { if (confirm(`Apagar "${task.title}"?`)) { deleteTask(task.id); onChanged(); } }}><TrashIcon />Apagar</button>
+          {rule ? (
+            <>
+              <button className="danger" onClick={async () => {
+                if (!confirm(`Apagar "${task.title}" só neste dia? Ela continua se repetindo nos outros.`)) return;
+                await sb.from('recurring_tasks').update({ skip_dates: [...(rule.skip_dates || []), task.date_key] }).eq('id', rule.id);
+                await deleteTask(task.id); onChanged();
+              }}><TrashIcon />Apagar só esta</button>
+              {rule.active && <button className="danger" onClick={async () => {
+                if (!confirm(`Parar de repetir "${task.title}"? As próximas não serão mais criadas; as já feitas continuam no histórico.`)) return;
+                await stopRecurring(rule.id); onChanged();
+              }}>↻ Parar de repetir</button>}
+            </>
+          ) : (
+            <button className="danger" onClick={async () => { if (confirm(`Apagar "${task.title}"?`)) { await deleteTask(task.id); onChanged(); } }}><TrashIcon />Apagar</button>
+          )}
         </div>
       )}
       {rescheduling && <RescheduleRow task={task} onReschedule={handleReschedule} onCancel={() => setRescheduling(false)} />}
@@ -189,6 +242,9 @@ function TaskRow({ task, subs, isToday, showReschedule, onEdit, onChanged }) {
 export default function RotinaView() {
   const { user } = useAppData();
   const [noDateMode, setNoDateMode] = useState(false);
+  const [recMode, setRecMode] = useState(false);
+  const [rules, setRules] = useState([]);
+  const rulesById = useMemo(() => Object.fromEntries(rules.map(r => [r.id, r])), [rules]);
   const [viewedDate, setViewedDate] = useState(todayKey());
   const [viewedTasks, setViewedTasks] = useState([]);
   const [subtasksByTask, setSubtasksByTask] = useState({});
@@ -205,6 +261,9 @@ export default function RotinaView() {
   }, [user]);
 
   const loadDay = useCallback(async (dateKey) => {
+    const ruleList = await loadRecurring(user.id);
+    setRules(ruleList);
+    await materializeRecurring(user.id, dateKey, ruleList);
     const { data: tasksData } = await sb.from('tasks').select('*').eq('user_id', user.id).eq('date_key', dateKey).order('start_time');
     const list = tasksData || [];
     setViewedTasks(list);
@@ -219,11 +278,13 @@ export default function RotinaView() {
   }, [user, loadSubtasksFor]);
 
   useEffect(() => {
-    if (noDateMode) loadNoDate();
+    if (recMode) loadRecurring(user.id).then(setRules);
+    else if (noDateMode) loadNoDate();
     else loadDay(viewedDate);
-  }, [noDateMode, viewedDate, loadDay, loadNoDate]);
+  }, [recMode, noDateMode, viewedDate, loadDay, loadNoDate, user]);
 
   function refresh() {
+    if (recMode) { loadRecurring(user.id).then(setRules); return; }
     if (noDateMode) loadNoDate();
     else loadDay(viewedDate);
   }
@@ -287,27 +348,60 @@ export default function RotinaView() {
   function openEdit(task) { setEditing(task); setFormOpen(true); }
   function closeForm() { setFormOpen(false); setEditing(null); }
   function afterSave(savedDate) {
-    setFormOpen(false); setEditing(null);
-    if (savedDate === null) { setNoDateMode(true); }
-    else { setNoDateMode(false); setViewedDate(savedDate); }
+    setFormOpen(false); setEditing(null); setRecMode(false);
+    if (savedDate === null) { setNoDateMode(true); loadNoDate(); }
+    else { setNoDateMode(false); setViewedDate(savedDate); loadDay(savedDate); }
   }
+  function chooseMode(m) {
+    setFormOpen(false); setEditing(null);
+    setRecMode(m === 'rec');
+    setNoDateMode(m === 'nodate');
+  }
+  const activeRules = rules.filter(r => r.active);
 
   return (
     <div className="view active">
-      <div className="section-title">Tarefas <span className="count">{viewedTasks.length}</span></div>
+      <div className="section-title">Tarefas <span className="count">{recMode ? `${activeRules.length} recorrentes` : viewedTasks.length}</span></div>
 
-      <div className="day-nav">
-        {!noDateMode && <button className="cal-arrow" onClick={() => changeDay(-1)}>‹</button>}
-        <div className="day-nav-label">
-          {noDateMode ? 'Sem data' : formatDateLabel(viewedDate)}
-          {(noDateMode || !isToday) && <button className="day-nav-today" onClick={goToday}>Hoje</button>}
-        </div>
-        {!noDateMode && <button className="cal-arrow" onClick={() => changeDay(1)}>›</button>}
-      </div>
       <div className="segmented">
-        <button className={`seg-btn ${!noDateMode ? 'active' : ''}`} onClick={() => setNoDateMode(false)}>Por data</button>
-        <button className={`seg-btn ${noDateMode ? 'active' : ''}`} onClick={() => setNoDateMode(true)}>Sem data</button>
+        <button className={`seg-btn ${!noDateMode && !recMode ? 'active' : ''}`} onClick={() => chooseMode('date')}>Por data</button>
+        <button className={`seg-btn ${noDateMode && !recMode ? 'active' : ''}`} onClick={() => chooseMode('nodate')}>Sem data</button>
+        <button className={`seg-btn ${recMode ? 'active' : ''}`} onClick={() => chooseMode('rec')}>Recorrentes</button>
       </div>
+
+      {recMode ? (
+        <>
+          <div className="notif-hint" style={{ marginBottom: 10 }}>Para criar uma, use "+ Nova tarefa" em Por data e escolha como ela se repete.</div>
+          {activeRules.length === 0 ? (
+            <div className="empty">Nenhuma tarefa recorrente ainda.</div>
+          ) : activeRules.map(r => (
+            <div className="row" key={r.id}>
+              <div className="row-body">
+                <div className="title">
+                  {r.priority && r.priority !== 'none' && <span className={`prio-dot ${r.priority}`} />}
+                  <span className="category-tag">{r.category || 'Geral'}</span>{r.title}
+                </div>
+                <div className="meta">↻ {describeRecurrence(r)}{r.start_time ? ` · ${r.start_time}${r.end_time ? ' - ' + r.end_time : ''}` : ''} · desde {new Date(r.start_date + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
+              </div>
+              <button className="del-btn" aria-label="Parar de repetir" onClick={async () => {
+                if (!confirm(`Parar de repetir "${r.title}"? As próximas não serão mais criadas; as já feitas continuam no histórico.`)) return;
+                await stopRecurring(r.id); refresh();
+              }}><TrashIcon /></button>
+            </div>
+          ))}
+        </>
+      ) : (
+      <>
+      {!noDateMode && (
+        <div className="day-nav">
+          <button className="cal-arrow" onClick={() => changeDay(-1)}>‹</button>
+          <div className="day-nav-label">
+            {formatDateLabel(viewedDate)}
+            {!isToday && <button className="day-nav-today" onClick={goToday}>Hoje</button>}
+          </div>
+          <button className="cal-arrow" onClick={() => changeDay(1)}>›</button>
+        </div>
+      )}
 
       {isToday && nextTask && (
         <div className="next-task-card">
@@ -328,11 +422,14 @@ export default function RotinaView() {
             <div className={`routine-group-header ${s.key === 'pending' ? 'neutral' : s.key}`}>{s.label}</div>
             <div className="routine-group-body">
               {groups[s.key].map(t => (
-                <TaskRow key={t.id} task={t} subs={subtasksByTask[t.id] || []} isToday={isToday} showReschedule={!noDateMode && !isToday} onEdit={openEdit} onChanged={refresh} />
+                <TaskRow key={t.id} task={t} subs={subtasksByTask[t.id] || []} rule={t.recurring_id ? rulesById[t.recurring_id] : null}
+                  showReschedule={!noDateMode && !isToday} onEdit={openEdit} onChanged={refresh} />
               ))}
             </div>
           </div>
         ))
+      )}
+      </>
       )}
     </div>
   );

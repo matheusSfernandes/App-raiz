@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { sb } from '../lib/supabaseClient';
 import { todayKey, dateToKey, previousScheduledDate } from '../lib/helpers';
+import { materializeRecurring } from '../lib/recurring';
 
 const AppDataContext = createContext(null);
 
@@ -40,7 +41,7 @@ export function AppDataProvider({ user, children }) {
 
       if (usedThisMonth < 2) {
         usedThisMonth++;
-        freezeLog.push(todayKey());
+        freezeLog.push(`${prevScheduled}|${h.id}`);
         freezeLogChanged = true;
         await sb.from('habits').update({ last_done: prevScheduled }).eq('id', h.id);
         updated[i] = { ...h, last_done: prevScheduled };
@@ -58,11 +59,12 @@ export function AppDataProvider({ user, children }) {
   }, [user, showToast]);
 
   const refreshAll = useCallback(async () => {
+    await materializeRecurring(user.id, todayKey());
     const [{ data: profileRows }, { data: habitsData }, { data: tasksData }, { data: txData }] = await Promise.all([
       sb.from('profiles').select('*').eq('id', user.id).maybeSingle(),
       sb.from('habits').select('*').eq('user_id', user.id).order('created_at'),
       sb.from('tasks').select('*').eq('user_id', user.id).eq('date_key', todayKey()).order('start_time'),
-      sb.from('transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      sb.from('transactions').select('*').eq('user_id', user.id).order('date_key', { ascending: false }).order('created_at', { ascending: false }),
     ]);
 
     let prof = profileRows;
@@ -102,20 +104,49 @@ export function AppDataProvider({ user, children }) {
     }
     await refreshAll();
   };
+  // Recalcula sequência e último dia feito a partir do registro de hábitos
+  // (dias protegidos por congelamento contam como feitos)
+  const recomputeHabit = async (habit) => {
+    const { data: logs } = await sb.from('habit_logs').select('date_key').eq('habit_id', habit.id).order('date_key', { ascending: false }).limit(400);
+    const ok = new Set((logs || []).map(l => l.date_key));
+    (profile.freeze_log || []).forEach(entry => {
+      const [date, hid] = String(entry).split('|');
+      if (hid === habit.id) ok.add(date);
+    });
+    const days = habit.days_of_week || [0, 1, 2, 3, 4, 5, 6];
+    const created = habit.created_at ? dateToKey(new Date(habit.created_at)) : '0000-00-00';
+    const today = todayKey();
+    const cursor = new Date(today + 'T12:00:00');
+    let streak = 0;
+    let first = true;
+    for (let i = 0; i < 400; i++) {
+      const key = dateToKey(cursor);
+      if (key < created) break;
+      if (days.includes(cursor.getDay())) {
+        if (ok.has(key)) streak++;
+        else if (!(first && key === today)) break;
+        first = false;
+      }
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    const lastDone = [...ok].filter(k => k <= today).sort().pop() || null;
+    await sb.from('habits').update({ streak, last_done: lastDone }).eq('id', habit.id);
+  };
+  const setHabitDone = async (id, dateKey, done) => {
+    const h = habits.find(x => x.id === id);
+    if (!h) return false;
+    if (done) {
+      await sb.from('habit_logs').upsert({ user_id: user.id, habit_id: id, date_key: dateKey }, { onConflict: 'habit_id,date_key' });
+    } else {
+      await sb.from('habit_logs').delete().eq('habit_id', id).eq('date_key', dateKey);
+    }
+    await recomputeHabit(h);
+    await refreshAll();
+    return done;
+  };
   const toggleHabit = async (id) => {
     const h = habits.find(x => x.id === id);
-    const today = todayKey();
-    let confettiOk = false;
-    if (h.last_done === today) {
-      await sb.from('habits').update({ last_done: null, streak: Math.max(0, h.streak - 1) }).eq('id', id);
-      await sb.from('habit_logs').delete().eq('habit_id', id).eq('date_key', today);
-    } else {
-      await sb.from('habits').update({ last_done: today, streak: h.streak + 1 }).eq('id', id);
-      await sb.from('habit_logs').upsert({ user_id: user.id, habit_id: id, date_key: today }, { onConflict: 'habit_id,date_key' });
-      confettiOk = true;
-    }
-    await refreshAll();
-    return confettiOk;
+    return setHabitDone(id, todayKey(), h.last_done !== todayKey());
   };
   const deleteHabit = async (id) => {
     await sb.from('habits').delete().eq('id', id);
@@ -185,7 +216,7 @@ export function AppDataProvider({ user, children }) {
   const value = {
     user, profile, habits, tasks, transactions, subtasksByTask, loading,
     toasts, showToast, refreshAll,
-    saveHabit, toggleHabit, deleteHabit,
+    saveHabit, toggleHabit, setHabitDone, deleteHabit,
     saveTask, toggleTask, deleteTask, rescheduleTask,
     addSubtask, toggleSubtask, deleteSubtask,
     addTx, deleteTx,

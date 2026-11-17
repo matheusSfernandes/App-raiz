@@ -13,7 +13,8 @@ function heatClass(pct) {
 }
 
 export default function HistoricoView() {
-  const { habits, user } = useAppData();
+  const { habits, user, setHabitDone, toggleTask } = useAppData();
+  const [busy, setBusy] = useState(false);
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [dayData, setDayData] = useState({});
   const [selectedKey, setSelectedKey] = useState(null);
@@ -55,9 +56,22 @@ export default function HistoricoView() {
 
   useEffect(() => { loadCalendar(); }, [loadCalendar]);
 
-  async function selectDay(key) {
+  async function toggleDayHabit(habitId, done) {
+    setBusy(true);
+    await setHabitDone(habitId, selectedKey, done);
+    await Promise.all([selectDay(selectedKey, true), loadCalendar()]);
+    setBusy(false);
+  }
+  async function toggleDayTask(task) {
+    setBusy(true);
+    await toggleTask(task);
+    await Promise.all([selectDay(selectedKey, true), loadCalendar()]);
+    setBusy(false);
+  }
+
+  async function selectDay(key, keep) {
     setSelectedKey(key);
-    setDayDetail(null);
+    if (!keep) setDayDetail(null);
     const [{ data: dayTasks }, { data: dayLogs }] = await Promise.all([
       sb.from('tasks').select('*').eq('user_id', user.id).eq('date_key', key),
       sb.from('habit_logs').select('habit_id').eq('user_id', user.id).eq('date_key', key),
@@ -114,6 +128,7 @@ export default function HistoricoView() {
           <div className="section-title" style={{ marginTop: 20 }}>
             {new Date(selectedKey + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </div>
+          <div className="notif-hint" style={{ marginTop: -6, marginBottom: 10 }}>Esqueceu de marcar? Toque no quadrado para registrar neste dia.</div>
           {(!dayDetail.habits.length && !dayDetail.tasks.length) ? (
             <div className="empty">Nada registrado nesse dia.</div>
           ) : (
@@ -122,14 +137,16 @@ export default function HistoricoView() {
                 const done = dayDetail.loggedIds.includes(h.id);
                 return (
                   <div className={`row ${done ? 'done' : ''}`} key={h.id}>
-                    <div className={`check ${done ? 'checked' : ''}`} style={{ cursor: 'default' }}><CheckIcon /></div>
-                    <div className="row-body"><div className="title">{h.name}</div><div className="meta">Hábito</div></div>
+                    <button className={`check ${done ? 'checked' : ''}`} disabled={busy} aria-label={done ? 'Desmarcar' : 'Marcar como feito'}
+                      onClick={() => toggleDayHabit(h.id, !done)}><CheckIcon /></button>
+                    <div className="row-body"><div className="title">{h.name}</div><div className="meta">Hábito{h.streak ? ` · sequência ${h.streak}` : ''}</div></div>
                   </div>
                 );
               })}
               {dayDetail.tasks.map(t => (
                 <div className={`row ${t.done ? 'done' : ''}`} key={t.id}>
-                  <div className={`check ${t.done ? 'checked' : ''}`} style={{ cursor: 'default' }}><CheckIcon /></div>
+                  <button className={`check ${t.done ? 'checked' : ''}`} disabled={busy} aria-label={t.done ? 'Desmarcar' : 'Marcar como feita'}
+                    onClick={() => toggleDayTask(t)}><CheckIcon /></button>
                   <div className="row-body"><div className="title">{t.title}</div><div className="meta">Tarefa</div></div>
                 </div>
               ))}

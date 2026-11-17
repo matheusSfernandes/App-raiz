@@ -33,12 +33,13 @@ function TxForm({ onCancel }) {
   const { addTx } = useAppData();
   const [desc, setDesc] = useState('');
   const [amount, setAmount] = useState('');
-  const [type, setType] = useState('in');
+  const [type, setType] = useState('out');
+  const [date, setDate] = useState(todayKey());
 
   async function handleSave() {
     const amt = parseFloat(amount);
     if (!desc.trim() || isNaN(amt)) return;
-    await addTx({ description: desc.trim(), amount: amt, type });
+    await addTx({ description: desc.trim(), amount: amt, type, date_key: date || todayKey() });
     onCancel();
   }
 
@@ -48,10 +49,11 @@ function TxForm({ onCancel }) {
       <div className="two">
         <input type="number" placeholder="Valor (R$)" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} />
         <select value={type} onChange={e => setType(e.target.value)}>
-          <option value="in">Entrada</option>
           <option value="out">Saída</option>
+          <option value="in">Entrada</option>
         </select>
       </div>
+      <div className="two"><input type="date" value={date} onChange={e => setDate(e.target.value)} aria-label="Data" /></div>
       <div className="btn-row">
         <button className="btn" onClick={handleSave}>Salvar</button>
         <button className="btn ghost" onClick={onCancel}>Cancelar</button>
