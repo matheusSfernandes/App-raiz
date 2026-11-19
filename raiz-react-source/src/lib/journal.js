@@ -2,11 +2,11 @@
 import { sb } from './supabaseClient';
 
 export const MOODS = [
-  { v: 1, emoji: '😞', label: 'Péssimo' },
-  { v: 2, emoji: '😕', label: 'Ruim' },
-  { v: 3, emoji: '😐', label: 'Ok' },
-  { v: 4, emoji: '🙂', label: 'Bom' },
-  { v: 5, emoji: '😄', label: 'Ótimo' },
+  { v: 1, label: 'Péssimo' },
+  { v: 2, label: 'Ruim' },
+  { v: 3, label: 'Ok' },
+  { v: 4, label: 'Bom' },
+  { v: 5, label: 'Ótimo' },
 ];
 export const moodOf = v => MOODS.find(m => m.v === Number(v)) || null;
 

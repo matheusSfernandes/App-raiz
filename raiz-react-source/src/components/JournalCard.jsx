@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAppData } from '../context/AppDataContext';
 import { MOODS, loadJournal, saveJournal } from '../lib/journal';
+import MoodFace from './ui/MoodFace';
 import { todayKey, formatKeyBR } from '../lib/helpers';
 
 // Humor + uma linha do dia. Usado no Início (hoje) e no Histórico (dia escolhido).
@@ -49,7 +50,7 @@ export default function JournalCard({ dateKey = todayKey(), title, onSaved }) {
           <button key={m.v} role="radio" aria-checked={entry?.mood === m.v} disabled={!loaded || saving}
             className={`mood-btn ${entry?.mood === m.v ? 'on' : ''}`}
             onClick={() => save({ mood: entry?.mood === m.v ? null : m.v })}>
-            <span className="mood-emoji">{m.emoji}</span><span className="mood-label">{m.label}</span>
+            <MoodFace mood={m.v} /><span className="mood-label">{m.label}</span>
           </button>
         ))}
       </div>

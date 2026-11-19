@@ -653,8 +653,12 @@ button { font-family: inherit; }
 .mood-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 2px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface); cursor: pointer; color: var(--ink-soft); font: inherit; transition: background .15s ease, border-color .15s ease; }
 .mood-btn:hover:not(:disabled) { border-color: var(--accent); }
 .mood-btn.on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
-.mood-emoji { font-size: 22px; line-height: 1; filter: grayscale(.35); }
-.mood-btn.on .mood-emoji { filter: none; }
+.mood-btn .mood-face { color: var(--ink-faint); transition: color .15s ease; }
+.mood-btn:hover:not(:disabled) .mood-face { color: var(--ink-soft); }
+.mood-btn.on .mood-face { color: var(--accent); }
+.mood-btn.on .mood-label { color: var(--accent); font-weight: 600; }
+.diary-mood .mood-face { color: var(--accent); }
+.fin-stat .v .mood-face { color: var(--accent); vertical-align: -4px; }
 .mood-label { font-size: 11px; font-weight: 500; }
 .journal-note { display: flex; gap: 8px; margin-top: 10px; }
 .journal-note input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; font-size: 16px; }

@@ -5,6 +5,7 @@ import { dateToKey, todayKey, formatKeyBR } from '../lib/helpers';
 import { countsOnDay, weekStartKey, isFlexible } from '../lib/habits';
 import { brl, catOf } from '../lib/finance';
 import { moodOf } from '../lib/journal';
+import MoodFace from './ui/MoodFace';
 
 const addDays = (key, n) => { const d = new Date(key + 'T12:00:00'); d.setDate(d.getDate() + n); return dateToKey(d); };
 const shortDate = key => new Date(key + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }).replace('.', '');
@@ -98,7 +99,7 @@ export default function WeeklyReview() {
         <div className="fin-stat"><div className="l">Hábitos</div><div className="v">{hab.pct === null ? '-' : `${hab.pct}%`}</div><div className="review-sub">cumpridos</div></div>
         <div className="fin-stat"><div className="l">Tarefas</div><div className="v">{doneTasks.length}/{data.tasks.length}</div><div className="review-sub">feitas</div></div>
         <div className="fin-stat"><div className="l">Treinos</div><div className="v">{data.sessions.length}</div><div className="review-sub">na semana</div></div>
-        <div className="fin-stat"><div className="l">Humor</div><div className="v">{avgMood ? moodOf(Math.round(avgMood)).emoji : '-'}</div><div className="review-sub">{avgMood ? `média ${avgMood.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} de 5` : 'sem registro'}</div></div>
+        <div className="fin-stat"><div className="l">Humor</div><div className="v">{avgMood ? <MoodFace mood={Math.round(avgMood)} size={22} /> : '-'}</div><div className="review-sub">{avgMood ? `média ${avgMood.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} de 5` : 'sem registro'}</div></div>
       </div>
 
       {leftTasks.length > 0 && <>
@@ -135,7 +136,7 @@ export default function WeeklyReview() {
         <div className="section-title">Diário</div>
         <div className="fin-card">{notes.map(j => (
           <div className="review-row" key={j.date_key}>
-            <div><div className="tx-date">{shortDate(j.date_key)} {moodOf(j.mood)?.emoji || ''}</div><div className="journal-line">{j.note}</div></div>
+            <div><div className="tx-date">{shortDate(j.date_key)}{j.mood ? ` · ${moodOf(j.mood).label}` : ''}</div><div className="journal-line">{j.note}</div></div>
           </div>
         ))}</div>
       </>}
