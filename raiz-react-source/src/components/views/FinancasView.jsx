@@ -211,7 +211,8 @@ function BillRow({ bill, month, onEdit }) {
   const { payFixedBill, deleteTx, deleteFixedBill } = useAppData();
   const [busy, setBusy] = useState(false);
   const isIn = bill.type === 'in';
-  const label = bill.status === 'paid' ? (isIn ? 'Recebida' : 'Paga') : STATUS_LABEL[bill.status];
+  const label = bill.status === 'paid' ? (isIn ? 'Recebida' : 'Paga') : isIn ? 'A receber' : STATUS_LABEL[bill.status];
+  const statusCls = isIn && bill.status === 'late' ? 'pending' : bill.status;
 
   async function toggle() {
     setBusy(true);
@@ -227,7 +228,7 @@ function BillRow({ bill, month, onEdit }) {
       </button>
       <div className="bill-main">
         <div className="tx-desc">{bill.description}</div>
-        <div className="tx-date">Dia {bill.day_of_month}{bill.category ? ` · ${bill.category}` : ''} · <span className={`bill-status ${bill.status}`}>{label}</span></div>
+        <div className="tx-date">Dia {bill.day_of_month}{bill.category ? ` · ${bill.category}` : ''} · <span className={`bill-status ${statusCls}`}>{label}</span></div>
       </div>
       <div className={`tx-amt ${bill.type}`}>{isIn ? '+' : '−'} {brl(bill.amount)}</div>
       {onEdit && <>
