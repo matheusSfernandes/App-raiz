@@ -609,16 +609,20 @@ button { font-family: inherit; }
 .mchart-info strong { color: var(--ink); font-size: 13.5px; }
 .mchart-info b { color: var(--ink); }
 .mchart-info b.neg, .mchart-table td.neg { color: var(--danger); }
-.mchart { width: 100%; height: auto; display: block; margin: 4px 0; }
-.mchart-base { stroke: var(--line); stroke-width: 1; }
-.mchart-bar { fill: var(--heat-2); transition: fill .15s ease; }
-.mchart-bar.sel { fill: var(--accent); }
-.mchart-bar.neg { fill: var(--danger-soft); stroke: var(--danger); stroke-width: 1; }
-.mchart-bar.neg.sel { fill: var(--danger); }
-.mchart g:hover .mchart-bar:not(.sel) { fill: var(--heat-3); }
-.mchart-val { font-size: 11px; font-weight: 600; fill: var(--ink); font-family: inherit; }
-.mchart-lbl { font-size: 11px; fill: var(--ink-faint); font-family: inherit; }
-.mchart-lbl.sel { fill: var(--ink); font-weight: 600; }
+.mchart { display: flex; gap: 4px; padding: 22px 0 4px; }
+.mchart-col { flex: 1; min-width: 0; background: none; border: none; padding: 0; cursor: pointer; display: flex; flex-direction: column; align-items: stretch; font: inherit; }
+.mchart-pos { display: flex; align-items: flex-end; justify-content: center; border-bottom: 1px solid var(--line); }
+.mchart-neg { display: flex; align-items: flex-start; justify-content: center; }
+.mchart-bar { position: relative; width: min(32px, 60%); border-radius: 4px 4px 0 0; background: var(--heat-2); transition: background .15s ease; }
+.mchart-bar.neg { border-radius: 0 0 4px 4px; background: var(--danger-soft); box-shadow: inset 0 0 0 1px var(--danger); }
+.mchart-bar.sel { background: var(--accent); }
+.mchart-bar.neg.sel { background: var(--danger); box-shadow: none; }
+.mchart-col:hover .mchart-bar:not(.sel) { background: var(--heat-3); }
+.mchart-col:hover .mchart-bar.neg:not(.sel) { background: var(--danger-soft); }
+.mchart-val { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(100% + 3px); font-size: 11.5px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.mchart-val.below { bottom: auto; top: calc(100% + 3px); }
+.mchart-lbl { font-size: 11.5px; color: var(--ink-faint); text-align: center; margin-top: 6px; }
+.mchart-lbl.sel { color: var(--ink); font-weight: 600; }
 .mchart-table { padding: 4px 0 10px; font-size: 12.5px; }
 .mchart-table summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 12.5px; }
 .mchart-table table { width: 100%; border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }

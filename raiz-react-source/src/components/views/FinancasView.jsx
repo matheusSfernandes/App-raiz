@@ -161,13 +161,11 @@ function MonthsChart({ month, onPick }) {
   const [hover, setHover] = useState(null);
   const months = Array.from({ length: 6 }, (_, i) => shiftMonth(month, i - 5));
   const data = months.map(m => ({ m, ...monthTotals(transactions, m) }));
-  const maxAbs = Math.max(1, ...data.map(d => Math.abs(d.net)));
-  const hasNeg = data.some(d => d.net < 0), hasPos = data.some(d => d.net > 0);
-  const W = 320, H = 150, top = 16, bottom = 22;
-  const plotH = H - top - bottom;
-  const zeroY = top + (hasNeg && hasPos ? plotH / 2 : hasNeg ? 0 : plotH);
-  const scale = (hasNeg && hasPos ? plotH / 2 : plotH) / maxAbs;
-  const slot = W / data.length, bw = Math.min(30, slot * 0.5);
+  const posMax = Math.max(0, ...data.map(d => d.net));
+  const negMax = Math.max(0, ...data.map(d => -d.net));
+  const total = posMax + negMax || 1;
+  const PLOT = 120; // px
+  const posH = (PLOT * posMax) / total, negH = PLOT - posH;
   const shown = data.find(d => d.m === (hover || month));
 
   return (
@@ -176,23 +174,22 @@ function MonthsChart({ month, onPick }) {
         <strong>{monthLabel(shown.m)}</strong>
         <span>Entradas {brl(shown.inc)} · Saídas {brl(shown.out)} · Saldo <b className={shown.net < 0 ? 'neg' : ''}>{brl(shown.net)}</b></span>
       </div>
-      <svg className="mchart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Saldo dos últimos 6 meses" onMouseLeave={() => setHover(null)}>
-        <line x1="0" x2={W} y1={zeroY} y2={zeroY} className="mchart-base" />
-        {data.map((d, i) => {
-          const cx = slot * i + slot / 2;
-          const h = Math.abs(d.net) * scale;
-          const y = d.net >= 0 ? zeroY - h : zeroY;
+      <div className="mchart" role="img" aria-label="Saldo dos últimos 6 meses" onMouseLeave={() => setHover(null)}>
+        {data.map(d => {
           const sel = d.m === month;
+          const h = d.net >= 0 ? (posMax ? (d.net / posMax) * posH : 0) : (negMax ? (-d.net / negMax) * negH : 0);
+          const bar = h > 0 && <div className={`mchart-bar ${d.net < 0 ? 'neg' : ''} ${sel ? 'sel' : ''}`} style={{ height: Math.max(2, h) }}>
+            {sel && <span className={`mchart-val ${d.net < 0 ? 'below' : ''}`}>{brlShort(d.net)}</span>}
+          </div>;
           return (
-            <g key={d.m} onMouseEnter={() => setHover(d.m)} onClick={() => onPick(d.m)} style={{ cursor: 'pointer' }}>
-              <rect x={slot * i} y="0" width={slot} height={H} fill="transparent" />
-              {h > 0 && <rect x={cx - bw / 2} y={y} width={bw} height={Math.max(1.5, h)} rx="4" className={`mchart-bar ${d.net < 0 ? 'neg' : ''} ${sel ? 'sel' : ''}`} />}
-              {sel && d.net !== 0 && <text x={cx} y={d.net >= 0 ? y - 5 : y + h + 12} textAnchor="middle" className="mchart-val">{brlShort(d.net)}</text>}
-              <text x={cx} y={H - 6} textAnchor="middle" className={`mchart-lbl ${sel ? 'sel' : ''}`}>{monthShort(d.m)}</text>
-            </g>
+            <button key={d.m} className="mchart-col" onMouseEnter={() => setHover(d.m)} onFocus={() => setHover(d.m)} onClick={() => onPick(d.m)} aria-label={`${monthLabel(d.m)}: saldo ${brl(d.net)}`}>
+              <div className="mchart-pos" style={{ height: posH }}>{d.net >= 0 && bar}</div>
+              <div className="mchart-neg" style={{ height: negH }}>{d.net < 0 && bar}</div>
+              <div className={`mchart-lbl ${sel ? 'sel' : ''}`}>{monthShort(d.m)}</div>
+            </button>
           );
         })}
-      </svg>
+      </div>
       <details className="mchart-table">
         <summary>Ver em tabela</summary>
         <table>
