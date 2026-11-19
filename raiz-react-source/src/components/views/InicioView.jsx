@@ -3,6 +3,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
 import { todayKey, todayHabits, dateToKey, AREA_COLORS } from '../../lib/helpers';
 import { countsOnDay } from '../../lib/habits';
+import JournalCard from '../JournalCard';
 
 function GoalCard({ profile }) {
   const { goal_label, goal_date } = profile;
@@ -96,6 +97,8 @@ export default function InicioView() {
         <div className="stat-card"><div className="k">{maxStreak} {maxStreak === 1 ? 'dia' : 'dias'}</div><div className="l">Maior sequência</div></div>
         <div className="stat-card"><div className="k">{balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</div><div className="l">Saldo</div></div>
       </div>
+
+      <JournalCard />
 
       <div className="section-title">Áreas da vida</div>
       {Object.keys(byArea).length === 0 ? (

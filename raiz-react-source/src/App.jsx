@@ -7,7 +7,6 @@ import TabBar from './components/TabBar';
 import Toasts from './components/Toasts';
 import { HamburgerIcon } from './components/ui/Icons';
 import { AppDataProvider, useAppData } from './context/AppDataContext';
-import { useHabitReminders } from './hooks/useHabitReminders';
 
 import InicioView from './components/views/InicioView';
 import RotinaView from './components/views/RotinaView';
@@ -22,13 +21,27 @@ import TreinoView from './components/views/TreinoView';
 const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
 function AppShell() {
-  const { profile, habits, loading, toasts } = useAppData();
-  const [view, setView] = useState('inicio');
+  const { profile, loading, toasts } = useAppData();
+  // Abre direto numa tela quando vem de um lembrete (?view=historico&tab=revisao)
+  const [view, setView] = useState(() => new URLSearchParams(location.search).get('view') || 'inicio');
+  const [viewTab, setViewTab] = useState(() => new URLSearchParams(location.search).get('tab'));
   const [drawerOpen, setDrawerOpen] = useState(false);
-  useHabitReminders(habits);
+
+  useEffect(() => {
+    if (location.search) history.replaceState(null, '', location.pathname);
+    function onMsg(e) {
+      if (e.data?.type !== 'open') return;
+      const p = new URL(e.data.url).searchParams;
+      setViewTab(p.get('tab'));
+      setView(p.get('view') || 'inicio');
+    }
+    navigator.serviceWorker?.addEventListener('message', onMsg);
+    return () => navigator.serviceWorker?.removeEventListener('message', onMsg);
+  }, []);
 
   function navigate(v) {
     setView(v);
+    setViewTab(null);
     setDrawerOpen(false);
     const mainEl = document.querySelector('.main');
     if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'instant' });
@@ -66,7 +79,7 @@ function AppShell() {
               {view === 'habitos' && <HabitosView />}
               {view === 'treino' && <TreinoView />}
               {view === 'financas' && <FinancasView />}
-              {view === 'historico' && <HistoricoView />}
+              {view === 'historico' && <HistoricoView key={viewTab || 'h'} initialTab={viewTab} />}
               {view === 'perfil' && <PerfilView onNavigate={navigate} />}
               {view === 'conquistas' && <ConquistasView />}
               {view === 'foco' && <FocoView />}

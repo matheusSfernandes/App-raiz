@@ -4,6 +4,9 @@ import { sb } from '../../lib/supabaseClient';
 import { dateToKey, todayKey } from '../../lib/helpers';
 import { CheckIcon } from '../ui/Icons';
 import { countsOnDay, isFlexible } from '../../lib/habits';
+import JournalCard from '../JournalCard';
+import WeeklyReview from '../WeeklyReview';
+import { loadJournal, moodOf } from '../../lib/journal';
 
 function heatClass(pct) {
   if (pct === null || pct === undefined || pct === 0) return 'heat-0';
@@ -13,8 +16,33 @@ function heatClass(pct) {
   return 'heat-4';
 }
 
-export default function HistoricoView() {
+function DiaryList({ calendarDate, onOpenDay }) {
+  const { user } = useAppData();
+  const [rows, setRows] = useState(null);
+  const y = calendarDate.getFullYear(), m = calendarDate.getMonth();
+  useEffect(() => {
+    let cancelled = false;
+    loadJournal(user.id, dateToKey(new Date(y, m, 1)), dateToKey(new Date(y, m + 1, 0))).then(r => { if (!cancelled) setRows(r); });
+    return () => { cancelled = true; };
+  }, [user, y, m]);
+  if (!rows) return null;
+  if (!rows.length) return <div className="empty">Nenhum registro no diário neste mês. Registre o humor e uma linha do dia no Início.</div>;
+  return (
+    <div className="fin-card">{rows.map(j => (
+      <button className="diary-row" key={j.date_key} onClick={() => onOpenDay(j.date_key)}>
+        <span className="diary-mood" aria-label={moodOf(j.mood)?.label || 'Sem humor'}>{moodOf(j.mood)?.emoji || '·'}</span>
+        <div style={{ minWidth: 0 }}>
+          <div className="tx-date">{new Date(j.date_key + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}{j.mood ? ` · ${moodOf(j.mood).label}` : ''}</div>
+          {j.note && <div className="journal-line">{j.note}</div>}
+        </div>
+      </button>
+    ))}</div>
+  );
+}
+
+export default function HistoricoView({ initialTab }) {
   const { habits, user, setHabitDone, toggleTask } = useAppData();
+  const [tab, setTab] = useState(initialTab || 'calendario');
   const [busy, setBusy] = useState(false);
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [dayData, setDayData] = useState({});
@@ -106,11 +134,19 @@ export default function HistoricoView() {
   return (
     <div className="view active">
       <div className="section-title">Histórico</div>
+      <div className="segmented">
+        <button className={`seg-btn ${tab === 'calendario' ? 'active' : ''}`} onClick={() => setTab('calendario')}>Calendário</button>
+        <button className={`seg-btn ${tab === 'diario' ? 'active' : ''}`} onClick={() => setTab('diario')}>Diário</button>
+        <button className={`seg-btn ${tab === 'revisao' ? 'active' : ''}`} onClick={() => setTab('revisao')}>Revisão da semana</button>
+      </div>
+      {tab === 'revisao' && <WeeklyReview />}
+      {tab !== 'revisao' && <>
       <div className="calendar-nav">
         <button className="cal-arrow" onClick={() => setCalendarDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))}>‹</button>
         <div className="cal-month">{monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)}</div>
         <button className="cal-arrow" onClick={() => setCalendarDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))}>›</button>
       </div>
+      {tab === 'diario' ? <DiaryList calendarDate={calendarDate} onOpenDay={k => { setTab('calendario'); selectDay(k); }} /> : <>
       <div className="calendar-weekdays"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
       <div className="calendar-grid">{cells}</div>
       <div className="calendar-legend">
@@ -124,7 +160,8 @@ export default function HistoricoView() {
           <div className="section-title" style={{ marginTop: 20 }}>
             {new Date(selectedKey + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </div>
-          <div className="notif-hint" style={{ marginTop: -6, marginBottom: 10 }}>Esqueceu de marcar? Toque no quadrado para registrar neste dia.</div>
+          <JournalCard dateKey={selectedKey} title="Humor e anotação do dia" />
+          <div className="notif-hint" style={{ marginTop: 4, marginBottom: 10 }}>Esqueceu de marcar? Toque no quadrado para registrar neste dia.</div>
           {(!dayDetail.habits.length && !dayDetail.tasks.length) ? (
             <div className="empty">Nada registrado nesse dia.</div>
           ) : (
@@ -150,6 +187,8 @@ export default function HistoricoView() {
           )}
         </div>
       )}
+      </>}
+      </>}
     </div>
   );
 }

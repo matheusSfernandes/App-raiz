@@ -5,6 +5,7 @@ import { computeAchievements } from '../../lib/achievements';
 import { sb } from '../../lib/supabaseClient';
 import { getTheme, setTheme } from '../../lib/theme';
 import { downloadBackup } from '../../lib/backup';
+import { pushSupport, currentSubscription, enablePush, disablePush } from '../../lib/push';
 
 function emptyDraft(profile) {
   return {
@@ -33,7 +34,10 @@ export default function PerfilView({ onNavigate }) {
   }
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(emptyDraft(profile));
-  const [notifEnabled, setNotifEnabled] = useState(localStorage.getItem('raiz_notif_enabled') === '1');
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const support = pushSupport();
+  useEffect(() => { currentSubscription().then(s => setPushOn(!!s)).catch(() => {}); }, []);
   const [soundEnabled, setSoundEnabled] = useState(localStorage.getItem('raiz_sound_enabled') !== '0');
   const [levelInfo, setLevelInfo] = useState(null);
   const [theme, setThemeState] = useState(getTheme());
@@ -90,17 +94,21 @@ export default function PerfilView({ onNavigate }) {
     setDraft(d => ({ ...d, [key]: value }));
   }
 
-  async function toggleNotif() {
-    if (notifEnabled) {
-      localStorage.setItem('raiz_notif_enabled', '0');
-      setNotifEnabled(false);
-      return;
+  async function togglePush() {
+    if (pushBusy) return;
+    if (support === 'ios-install') { showToast('No iPhone: Compartilhar > Adicionar à Tela de Início, abra o Raiz por lá e ative.'); return; }
+    if (support !== 'ok') { showToast('Este navegador não recebe notificações.'); return; }
+    setPushBusy(true);
+    try {
+      if (pushOn) { await disablePush(); setPushOn(false); showToast('Lembretes desligados neste aparelho.'); }
+      else { await enablePush(user.id); setPushOn(true); showToast('Lembretes ligados neste aparelho.'); }
+    } catch (e) {
+      showToast(e.message || 'Não deu para ligar os lembretes.');
     }
-    if (!('Notification' in window)) { alert('Seu navegador não suporta notificações.'); return; }
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') { alert('Permissão de notificação negada.'); return; }
-    localStorage.setItem('raiz_notif_enabled', '1');
-    setNotifEnabled(true);
+    setPushBusy(false);
+  }
+  function toggleKind(field) {
+    saveProfile({ [field]: profile[field] === false });
   }
 
   function toggleSound() {
@@ -167,10 +175,23 @@ export default function PerfilView({ onNavigate }) {
       <div className="notif-hint">Automático segue o tema do seu celular ou computador.</div>
 
       <div className="section-title">Preferências</div>
-      <button className="setting-row" onClick={toggleNotif}>
-        <div><div className="setting-text">Lembretes de hábito</div><div className="setting-sub">Funciona com o app aberto no navegador</div></div>
-        <span className={`switch ${notifEnabled ? 'on' : ''}`} />
+      <button className="setting-row" onClick={togglePush} disabled={pushBusy}>
+        <div><div className="setting-text">Lembretes no celular</div><div className="setting-sub">{
+          support === 'ios-install' ? 'No iPhone, instale o app na Tela de Início para ativar'
+          : support !== 'ok' ? 'Este navegador não recebe notificações'
+          : 'Chegam mesmo com o app fechado (ative em cada aparelho)'}</div></div>
+        <span className={`switch ${pushOn ? 'on' : ''}`} />
       </button>
+      {pushOn && <div className="setting-group">
+        {[['notify_habits', 'Hábitos', 'No horário definido em cada hábito'],
+          ['notify_tasks', 'Tarefas', 'Na hora de início da tarefa'],
+          ['notify_review', 'Revisão da semana', 'Domingo às 19h']].map(([field, label, sub]) => (
+          <button key={field} className="setting-row sub" onClick={() => toggleKind(field)}>
+            <div><div className="setting-text">{label}</div><div className="setting-sub">{sub}</div></div>
+            <span className={`switch ${profile[field] !== false ? 'on' : ''}`} />
+          </button>
+        ))}
+      </div>}
       <button className="setting-row" onClick={toggleSound}>
         <div><div className="setting-text">Som ao concluir</div><div className="setting-sub">Um toque curto ao marcar algo como feito</div></div>
         <span className={`switch ${soundEnabled ? 'on' : ''}`} />
