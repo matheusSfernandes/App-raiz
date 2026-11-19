@@ -33,6 +33,7 @@ export function AppDataProvider({ user, children }) {
   const [habits, setHabits] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [fixedBills, setFixedBills] = useState([]);
   const [subtasksByTask, setSubtasksByTask] = useState({});
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState([]);
@@ -80,11 +81,12 @@ export function AppDataProvider({ user, children }) {
 
   const refreshAll = useCallback(async () => {
     await materializeRecurring(user.id, todayKey());
-    const [{ data: profileRows }, { data: habitsData }, { data: tasksData }, { data: txData }] = await Promise.all([
+    const [{ data: profileRows }, { data: habitsData }, { data: tasksData }, { data: txData }, { data: billsData }] = await Promise.all([
       sb.from('profiles').select('*').eq('id', user.id).maybeSingle(),
       sb.from('habits').select('*').eq('user_id', user.id).order('created_at'),
       sb.from('tasks').select('*').eq('user_id', user.id).eq('date_key', todayKey()).order('start_time'),
       sb.from('transactions').select('*').eq('user_id', user.id).order('date_key', { ascending: false }).order('created_at', { ascending: false }),
+      sb.from('fixed_bills').select('*').eq('user_id', user.id).order('day_of_month'),
     ]);
 
     let prof = profileRows;
@@ -121,6 +123,7 @@ export function AppDataProvider({ user, children }) {
     setHabits(fixedHabits);
     setTasks(taskList);
     setTransactions(txData || []);
+    setFixedBills(billsData || []);
     setSubtasksByTask(subs);
     setLoading(false);
   }, [user, checkStreakBreaks]);
@@ -221,8 +224,38 @@ export function AppDataProvider({ user, children }) {
     await sb.from('transactions').insert({ user_id: user.id, date_key: todayKey(), ...fields });
     await refreshAll();
   };
+  const updateTx = async (id, fields) => {
+    await sb.from('transactions').update(fields).eq('id', id);
+    await refreshAll();
+  };
   const deleteTx = async (id) => {
     await sb.from('transactions').delete().eq('id', id);
+    await refreshAll();
+  };
+
+  // ---- Contas fixas ----
+  const saveFixedBill = async (editId, fields) => {
+    if (editId) {
+      await sb.from('fixed_bills').update(fields).eq('id', editId);
+    } else {
+      await sb.from('fixed_bills').insert({ user_id: user.id, start_month: todayKey().slice(0, 7), ...fields });
+    }
+    await refreshAll();
+  };
+  const deleteFixedBill = async (id) => {
+    await sb.from('fixed_bills').delete().eq('id', id);
+    await refreshAll();
+  };
+  // Marca como paga no mês: cria a movimentação ligada à conta
+  const payFixedBill = async (bill, dateKey) => {
+    const { data: already } = await sb.from('transactions').select('id').eq('fixed_id', bill.id)
+      .gte('date_key', dateKey.slice(0, 7) + '-01').lte('date_key', dateKey.slice(0, 7) + '-31').limit(1);
+    if (!already?.length) {
+      await sb.from('transactions').insert({
+        user_id: user.id, fixed_id: bill.id, description: bill.description, amount: bill.amount,
+        type: bill.type, category: bill.category, date_key: dateKey,
+      });
+    }
     await refreshAll();
   };
 
@@ -238,7 +271,8 @@ export function AppDataProvider({ user, children }) {
     saveHabit, toggleHabit, setHabitDone, addHabitProgress, deleteHabit,
     saveTask, toggleTask, deleteTask, rescheduleTask,
     addSubtask, toggleSubtask, deleteSubtask,
-    addTx, deleteTx,
+    addTx, updateTx, deleteTx,
+    fixedBills, saveFixedBill, deleteFixedBill, payFixedBill,
     saveProfile,
   };
 

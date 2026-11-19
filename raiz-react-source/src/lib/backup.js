@@ -11,6 +11,7 @@ const TABLES = [
   ['Tarefas', 'tasks', 'user_id'],
   ['Subtarefas', 'subtasks', 'user_id'],
   ['Finanças', 'transactions', 'user_id'],
+  ['Contas fixas', 'fixed_bills', 'user_id'],
   ['Modelos de treino', 'workout_plans', 'user_id'],
   ['Exercícios dos modelos', 'workout_plan_exercises', 'user_id'],
   ['Treinos feitos', 'workout_sessions', 'user_id'],
