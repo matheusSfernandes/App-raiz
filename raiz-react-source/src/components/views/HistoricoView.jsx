@@ -22,7 +22,7 @@ function DiaryList({ calendarDate, onOpenDay }) {
   const y = calendarDate.getFullYear(), m = calendarDate.getMonth();
   useEffect(() => {
     let cancelled = false;
-    loadJournal(user.id, dateToKey(new Date(y, m, 1)), dateToKey(new Date(y, m + 1, 0))).then(r => { if (!cancelled) setRows(r); });
+    loadJournal(user.id, dateToKey(new Date(y, m, 1)), dateToKey(new Date(y, m + 1, 0))).then(r => { if (!cancelled) setRows(r.filter(j => j.mood || j.note)); });
     return () => { cancelled = true; };
   }, [user, y, m]);
   if (!rows) return null;
