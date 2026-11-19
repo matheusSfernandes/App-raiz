@@ -77,7 +77,7 @@ where not exists (select 1 from vault.secrets where name = 'raiz_cron_secret');
 
 -- 4) Agendamento: a cada minuto o banco chama a função send-reminders
 create extension if not exists pg_cron;
-create extension if not exists pg_net;
+create extension if not exists pg_net schema extensions;
 select cron.schedule('raiz-send-reminders', '* * * * *', $$
   select net.http_post(
     url := 'https://hjpbvfcmhuhhpwvlhewv.supabase.co/functions/v1/send-reminders',

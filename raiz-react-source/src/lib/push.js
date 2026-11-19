@@ -36,7 +36,14 @@ export async function enablePush(userId) {
   const reg = await registration();
   await navigator.serviceWorker.ready;
   let sub = await reg.pushManager.getSubscription();
-  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(cfg.value) });
+  if (!sub) {
+    try {
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(cfg.value) });
+    } catch (e) {
+      if (navigator.brave) throw new Error('O Brave bloqueia notificações push. Ative "Usar serviços do Google para mensagens push" em Configurações > Privacidade e segurança, reinicie o navegador e tente de novo.');
+      throw new Error('O navegador recusou a inscrição (' + (e.message || e.name) + '). Tente no Chrome ou no app instalado no celular.');
+    }
+  }
   const json = sub.toJSON();
   const { error } = await sb.from('push_subscriptions').upsert({
     user_id: userId, endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth,
@@ -51,4 +58,9 @@ export async function disablePush() {
   if (!sub) return;
   await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
   await sub.unsubscribe();
+}
+
+export async function sendTestPush() {
+  const { data } = await sb.functions.invoke('send-reminders?test=1', { body: {} });
+  return data;
 }

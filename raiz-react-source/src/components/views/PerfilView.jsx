@@ -5,7 +5,7 @@ import { computeAchievements } from '../../lib/achievements';
 import { sb } from '../../lib/supabaseClient';
 import { getTheme, setTheme } from '../../lib/theme';
 import { downloadBackup } from '../../lib/backup';
-import { pushSupport, currentSubscription, enablePush, disablePush } from '../../lib/push';
+import { pushSupport, currentSubscription, enablePush, disablePush, sendTestPush } from '../../lib/push';
 
 function emptyDraft(profile) {
   return {
@@ -107,6 +107,16 @@ export default function PerfilView({ onNavigate }) {
     }
     setPushBusy(false);
   }
+  async function testPush() {
+    setPushBusy(true);
+    try {
+      const r = await sendTestPush();
+      showToast(r?.sent ? `Lembrete de teste enviado para ${r.sent} aparelho(s).` : 'Nenhum aparelho recebeu. Desligue e ligue os lembretes de novo.');
+    } catch {
+      showToast('Não deu para enviar o teste agora.');
+    }
+    setPushBusy(false);
+  }
   function toggleKind(field) {
     saveProfile({ [field]: profile[field] === false });
   }
@@ -191,6 +201,7 @@ export default function PerfilView({ onNavigate }) {
             <span className={`switch ${profile[field] !== false ? 'on' : ''}`} />
           </button>
         ))}
+        <button className="link-btn" style={{ margin: '2px 0 4px 2px' }} disabled={pushBusy} onClick={testPush}>Enviar lembrete de teste</button>
       </div>}
       <button className="setting-row" onClick={toggleSound}>
         <div><div className="setting-text">Som ao concluir</div><div className="setting-sub">Um toque curto ao marcar algo como feito</div></div>

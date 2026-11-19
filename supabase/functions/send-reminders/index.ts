@@ -98,7 +98,34 @@ async function messagesFor(userId: string, tz: string): Promise<Msg[]> {
   return out;
 }
 
+// Teste pedido pelo próprio app (botão no Perfil): manda um aviso para os aparelhos da pessoa
+async function sendTest(req: Request) {
+  const jwt = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+  const { data: u } = await sb.auth.getUser(jwt);
+  if (!u?.user) return new Response("unauthorized", { status: 401, headers: cors });
+  const server = await appServer();
+  const { data: subs } = await sb.from("push_subscriptions").select("*").eq("user_id", u.user.id);
+  let sent = 0;
+  for (const s of subs || []) {
+    try {
+      await server.subscribe({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } })
+        .pushTextMessage(JSON.stringify({ title: "Raiz", body: "Lembretes funcionando neste aparelho.", url: "/?view=perfil", tag: "teste" }), {});
+      sent++;
+    } catch (e) {
+      if (e instanceof webpush.PushMessageError && (e.isGone() || e.response.status === 404)) await sb.from("push_subscriptions").delete().eq("id", s.id);
+      else console.error("teste falhou", String(e));
+    }
+  }
+  return new Response(JSON.stringify({ sent, devices: (subs || []).length }), { headers: { ...cors, "Content-Type": "application/json" } });
+}
+const cors = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  if (new URL(req.url).searchParams.get("test") === "1") return sendTest(req);
   const expected = await secret("raiz_cron_secret");
   if (!expected || req.headers.get("x-cron-secret") !== expected) return new Response("forbidden", { status: 403 });
 
