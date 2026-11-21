@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { sb } from '../lib/supabaseClient';
+import { isOnline } from '../lib/offline';
 import { todayKey, previousScheduledDate } from '../lib/helpers';
 import { materializeRecurring } from '../lib/recurring';
 import { currentStreak, isFlexible, isNumeric, weekStartKey } from '../lib/habits';
@@ -9,6 +10,8 @@ const AppDataContext = createContext(null);
 // Recalcula sequência e último dia feito a partir do registro de hábitos
 // (dias protegidos por congelamento contam como feitos)
 async function recomputeHabitRow(habit, freezeLog) {
+  // Sem internet o registro guardado pode estar incompleto: recalcula depois de sincronizar
+  if (!isOnline()) return habit;
   const { data: logs } = await sb.from('habit_logs').select('date_key').eq('habit_id', habit.id).order('date_key', { ascending: false }).limit(1000);
   const ok = new Set((logs || []).map(l => l.date_key));
   (freezeLog || []).forEach(entry => {
@@ -90,10 +93,11 @@ export function AppDataProvider({ user, children }) {
     ]);
 
     let prof = profileRows;
-    if (!prof) {
+    if (!prof && isOnline()) {
       await sb.from('profiles').insert({ id: user.id, name: '', goal: '', quote: '' });
       prof = { name: '', goal: '', quote: '' };
     }
+    if (!prof) prof = { name: '', goal: '', quote: '' };
 
     let subs = {};
     const taskList = tasksData || [];
@@ -105,7 +109,7 @@ export function AppDataProvider({ user, children }) {
       });
     }
 
-    let fixedHabits = await checkStreakBreaks(habitsData || [], prof);
+    let fixedHabits = isOnline() ? await checkStreakBreaks(habitsData || [], prof) : (habitsData || []);
     // Flexíveis: a sequência é em semanas, então recalcula ao abrir (vira a semana)
     fixedHabits = await Promise.all(fixedHabits.map(h => (isFlexible(h) ? recomputeHabitRow(h, prof.freeze_log) : h)));
     const today = todayKey();
@@ -129,6 +133,18 @@ export function AppDataProvider({ user, children }) {
   }, [user, checkStreakBreaks]);
 
   useEffect(() => { refreshAll(); }, [refreshAll]);
+  // Depois de enviar as alterações feitas sem internet, recarrega do servidor
+  useEffect(() => {
+    const onSynced = async () => {
+      // com os registros completos de novo, recalcula as sequências dos hábitos
+      const { data: hs } = await sb.from('habits').select('*').eq('user_id', user.id);
+      const { data: pr } = await sb.from('profiles').select('freeze_log').eq('id', user.id).maybeSingle();
+      for (const h of hs || []) await recomputeHabitRow(h, pr?.freeze_log || []);
+      refreshAll();
+    };
+    window.addEventListener('raiz-synced', onSynced);
+    return () => window.removeEventListener('raiz-synced', onSynced);
+  }, [refreshAll, user.id]);
 
   // ---- Habits ----
   const saveHabit = async (editId, fields) => {

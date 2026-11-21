@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { sb } from './lib/supabaseClient';
+import { sb, storedSession } from './lib/supabaseClient';
+import { clearOfflineData } from './lib/offline';
+import OfflineBar from './components/OfflineBar';
 import AuthScreen from './components/AuthScreen';
 import ResetPasswordScreen from './components/ResetPasswordScreen';
 import Sidebar from './components/Sidebar';
@@ -90,6 +92,7 @@ function AppShell() {
         </div>
       </div>
       <TabBar view={view} onNavigate={navigate} />
+      <OfflineBar />
       <Toasts toasts={toasts} />
     </div>
   );
@@ -100,8 +103,11 @@ export default function App() {
   const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   useEffect(() => {
-    sb.auth.getSession().then(({ data }) => setSession(data.session));
+    const offlineFallback = () => (!navigator.onLine ? storedSession() : null);
+    sb.auth.getSession().then(({ data, error }) => setSession(data.session || (error ? storedSession() : offlineFallback())));
     const { data: listener } = sb.auth.onAuthStateChange((event, s) => {
+      if (event === 'SIGNED_OUT') clearOfflineData();
+      if (!s && event === 'INITIAL_SESSION') { const f = storedSession(); if (f && !navigator.onLine) { setSession(f); return; } }
       setSession(s);
       if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
     });
@@ -110,7 +116,9 @@ export default function App() {
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+      const register = () => navigator.serviceWorker.register('/sw.js').catch(() => {});
+      if (document.readyState === 'complete') register();
+      else window.addEventListener('load', register, { once: true });
     }
   }, []);
 
