@@ -136,10 +136,13 @@ Na prática, o agendamento dos lembretes (a cada minuto) também mantém o banco
 1. Abrir o painel do Supabase e ver se o projeto está pausado; se estiver, clicar em **Resume project** e esperar alguns minutos.
 2. Ver no Cloudflare Pages se o último deploy falhou; se falhou, a versão anterior continua no ar.
 
-### 8.3 Backup
+### 8.3 Endereços dos e-mails de login
+Em Supabase, Authentication, URL Configuration: **Site URL** `https://app-raiz.pages.dev` e, em **Redirect URLs**, `https://app-raiz.pages.dev/**`. Sem isso, os links de confirmação de cadastro e de "Esqueci minha senha" abrem `localhost` (corrigido em 21/11/2026). Ao trocar para um domínio próprio, atualizar os dois campos.
+
+### 8.4 Backup
 Em Perfil, "Seus dados" baixa uma planilha .xlsx com todas as tabelas da conta. Vale baixar antes de mudanças grandes no banco.
 
-### 8.4 Avisos de segurança do Supabase
+### 8.5 Avisos de segurança do Supabase
 De tempos em tempos, conferir os avisos (advisors) do painel. O aviso de proteção contra senhas vazadas é conhecido e depende do plano Pro.
 
 ## 9. Fluxo de trabalho com o Claude
