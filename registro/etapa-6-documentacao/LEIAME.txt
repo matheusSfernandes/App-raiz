@@ -1,0 +1,8 @@
+Etapa 6, Atualizar documentação (20/11/2026)
+
+Antes: 3 partes .md feitas no chat "M - APP - ORGANIZAÇÃO" (arquitetura e banco, telas, design e deploy), guardadas fora do repositório. Não cobriam nada de novembro de 2026: sem Treino novo, recorrentes, hábitos por quantidade, Finanças por mês, diário, push, metas, modo sem internet; ainda descreviam o visual escuro antigo e a hospedagem no Netlify.
+Depois: documentação reescrita a partir do código da main e do banco, dentro do repositório, na pasta docs/:
+- docs/1-arquitetura-e-banco.md
+- docs/2-telas.md
+- docs/3-design-e-deploy.md
+Sem chaves, senhas ou e-mails: só a estrutura.
