@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { sb } from '../lib/supabaseClient';
 import { EyeIcon, EyeOffIcon, LogoMark } from './ui/Icons';
 
-function PasswordInput({ value, onChange, placeholder, autoComplete }) {
+function PasswordInput({ value, onChange, placeholder, autoComplete, name }) {
   const [show, setShow] = useState(false);
   return (
     <div className="password-field">
       <input
         type={show ? 'text' : 'password'}
+        name={name}
+        id={name}
         placeholder={placeholder}
         autoComplete={autoComplete}
         value={value}
@@ -27,7 +29,8 @@ export default function AuthScreen() {
   const [error, setError] = useState('');
   const [errorColor, setErrorColor] = useState('');
 
-  async function handleSubmit() {
+  async function handleSubmit(e) {
+    e?.preventDefault();
     setError(''); setErrorColor('');
 
     if (mode === 'forgot') {
@@ -67,16 +70,20 @@ export default function AuthScreen() {
       <LogoMark size={48} />
       <div className="auth-logo">Raiz</div>
       <div className="auth-sub">{titles[mode]}</div>
-      <input type="email" placeholder="E-mail" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} />
+      {/* Formulário de verdade: o iPhone (Chaves do iCloud) e o navegador oferecem salvar e preencher e-mail e senha */}
+      <form onSubmit={handleSubmit} method="post" action="#" style={{ width: '100%' }}>
+      <input type="email" name="email" id="email" placeholder="E-mail" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} inputMode="email" value={email} onChange={e => setEmail(e.target.value)} />
       {mode !== 'forgot' && (
         <PasswordInput
           value={password}
           onChange={e => setPassword(e.target.value)}
           placeholder="Senha"
+          name={mode === 'signup' ? 'new-password' : 'password'}
           autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
         />
       )}
-      <button className="btn" onClick={handleSubmit}>{buttonLabels[mode]}</button>
+      <button className="btn" type="submit">{buttonLabels[mode]}</button>
+      </form>
       <div className="auth-error" style={{ color: errorColor || undefined }}>{error}</div>
 
       {mode === 'login' && (

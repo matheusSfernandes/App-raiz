@@ -1,0 +1,5 @@
+Etapa 7, Lembrar e-mail e senha (21/11/2026)
+
+Antes: a tela de login não era um formulário de verdade (campos soltos e botão com clique). O iPhone e o navegador quase nunca ofereciam salvar a senha, e o Enter do teclado não entrava.
+Depois: login, cadastro e nova senha viraram formulários com os campos marcados como usuário e senha. O iPhone (Chaves do iCloud), o Chrome e o Android oferecem salvar e depois preenchem sozinhos; o Enter do teclado envia. Na troca de senha, o gerenciador atualiza a senha guardada.
+Visual: não mudou (imagem depois-login.png, igual à anterior).
