@@ -31,7 +31,7 @@ function DiaryList({ calendarDate, onOpenDay }) {
   return (
     <div className="fin-card">{rows.map(j => (
       <button className="diary-row" key={j.date_key} onClick={() => onOpenDay(j.date_key)}>
-        <span className="diary-mood" aria-label={moodOf(j.mood)?.label || 'Sem humor'}>{j.mood ? <MoodFace mood={j.mood} size={24} /> : '·'}</span>
+        <span className="diary-mood" aria-label={moodOf(j.mood)?.label || 'Sem humor'}>{j.mood ? <MoodFace mood={j.mood} size={24} colored /> : '·'}</span>
         <div style={{ minWidth: 0 }}>
           <div className="tx-date">{new Date(j.date_key + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}{j.mood ? ` · ${moodOf(j.mood).label}` : ''}</div>
           {j.note && <div className="journal-line">{j.note}</div>}

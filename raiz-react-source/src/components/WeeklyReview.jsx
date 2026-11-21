@@ -99,7 +99,7 @@ export default function WeeklyReview() {
         <div className="fin-stat"><div className="l">Hábitos</div><div className="v">{hab.pct === null ? '-' : `${hab.pct}%`}</div><div className="review-sub">cumpridos</div></div>
         <div className="fin-stat"><div className="l">Tarefas</div><div className="v">{doneTasks.length}/{data.tasks.length}</div><div className="review-sub">feitas</div></div>
         <div className="fin-stat"><div className="l">Treinos</div><div className="v">{data.sessions.length}</div><div className="review-sub">na semana</div></div>
-        <div className="fin-stat"><div className="l">Humor</div><div className="v">{avgMood ? <MoodFace mood={Math.round(avgMood)} size={22} /> : '-'}</div><div className="review-sub">{avgMood ? `média ${avgMood.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} de 5` : 'sem registro'}</div></div>
+        <div className="fin-stat"><div className="l">Humor</div><div className="v">{avgMood ? <MoodFace mood={Math.round(avgMood)} size={22} colored /> : '-'}</div><div className="review-sub">{avgMood ? `média ${avgMood.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} de 5` : 'sem registro'}</div></div>
       </div>
 
       {leftTasks.length > 0 && <>

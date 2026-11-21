@@ -48,9 +48,9 @@ export default function JournalCard({ dateKey = todayKey(), title, onSaved }) {
       <div className="mood-row" role="radiogroup" aria-label="Humor do dia">
         {MOODS.map(m => (
           <button key={m.v} role="radio" aria-checked={entry?.mood === m.v} disabled={!loaded || saving}
-            className={`mood-btn ${entry?.mood === m.v ? 'on' : ''}`}
+            className={`mood-btn ${entry?.mood === m.v ? `on mood-${m.v}` : ''}`}
             onClick={() => save({ mood: entry?.mood === m.v ? null : m.v })}>
-            <MoodFace mood={m.v} /><span className="mood-label">{m.label}</span>
+            <MoodFace mood={m.v} colored={entry?.mood === m.v} /><span className="mood-label">{m.label}</span>
           </button>
         ))}
       </div>

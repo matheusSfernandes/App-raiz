@@ -652,13 +652,37 @@ button { font-family: inherit; }
 .mood-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .mood-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 2px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface); cursor: pointer; color: var(--ink-soft); font: inherit; transition: background .15s ease, border-color .15s ease; }
 .mood-btn:hover:not(:disabled) { border-color: var(--accent); }
-.mood-btn.on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.mood-btn.on { background: var(--mood-soft, var(--accent-soft)); border-color: var(--mood-c, var(--accent)); color: var(--ink); }
 .mood-btn .mood-face { color: var(--ink-faint); transition: color .15s ease; }
 .mood-btn:hover:not(:disabled) .mood-face { color: var(--ink-soft); }
-.mood-btn.on .mood-face { color: var(--accent); }
-.mood-btn.on .mood-label { color: var(--accent); font-weight: 600; }
+.mood-btn.on .mood-label { color: var(--mood-text, var(--accent)); font-weight: 600; }
 .diary-mood .mood-face { color: var(--accent); }
 .fin-stat .v .mood-face { color: var(--accent); vertical-align: -4px; }
+
+/* Cores do humor (giz): preenchimento, contorno e traços do rosto */
+.mood-1 { --mood-c: #D06A5C; --mood-line: #A9483C; --mood-ink: #8A3328; --mood-text: #8A3328; --mood-soft: rgba(208,106,92,0.12); }
+.mood-2 { --mood-c: #E0954F; --mood-line: #B8712E; --mood-ink: #8F531D; --mood-text: #8F531D; --mood-soft: rgba(224,149,79,0.13); }
+.mood-3 { --mood-c: #DDBA4A; --mood-line: #B0912A; --mood-ink: #7F6818; --mood-text: #7F6818; --mood-soft: rgba(221,186,74,0.15); }
+.mood-4 { --mood-c: #8DB874; --mood-line: #5F8F48; --mood-ink: #446B32; --mood-text: #446B32; --mood-soft: rgba(141,184,116,0.15); }
+.mood-5 { --mood-c: #4FA283; --mood-line: #2F7A5E; --mood-ink: #1F5A44; --mood-text: #1F5A44; --mood-soft: rgba(79,162,131,0.13); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mood-1 { --mood-c: #DE8578; --mood-line: #E9A196; --mood-ink: #3A1611; --mood-text: #E9A196; }
+  :root:not([data-theme="light"]) .mood-2 { --mood-c: #E8A96C; --mood-line: #F0BE8C; --mood-ink: #3D2410; --mood-text: #F0BE8C; }
+  :root:not([data-theme="light"]) .mood-3 { --mood-c: #E6C866; --mood-line: #EED688; --mood-ink: #3A2F0B; --mood-text: #EED688; }
+  :root:not([data-theme="light"]) .mood-4 { --mood-c: #A3C98C; --mood-line: #BBD8A8; --mood-ink: #1F3317; --mood-text: #BBD8A8; }
+  :root:not([data-theme="light"]) .mood-5 { --mood-c: #6DBC9C; --mood-line: #8FCEB4; --mood-ink: #0F2E22; --mood-text: #8FCEB4; }
+}
+:root[data-theme="dark"] .mood-1 { --mood-c: #DE8578; --mood-line: #E9A196; --mood-ink: #3A1611; --mood-text: #E9A196; }
+:root[data-theme="dark"] .mood-2 { --mood-c: #E8A96C; --mood-line: #F0BE8C; --mood-ink: #3D2410; --mood-text: #F0BE8C; }
+:root[data-theme="dark"] .mood-3 { --mood-c: #E6C866; --mood-line: #EED688; --mood-ink: #3A2F0B; --mood-text: #EED688; }
+:root[data-theme="dark"] .mood-4 { --mood-c: #A3C98C; --mood-line: #BBD8A8; --mood-ink: #1F3317; --mood-text: #BBD8A8; }
+:root[data-theme="dark"] .mood-5 { --mood-c: #6DBC9C; --mood-line: #8FCEB4; --mood-ink: #0F2E22; --mood-text: #8FCEB4; }
+.mood-face.chalk .mf-fill { fill: var(--mood-c); }
+.mood-face.chalk .mf-ring { stroke: var(--mood-line); }
+.mood-face.chalk .mf-ink { color: var(--mood-ink); stroke: var(--mood-ink); }
+.mood-btn.on .mood-face.chalk { animation: chalk-in .32s ease-out; }
+@keyframes chalk-in { from { opacity: .2; transform: scale(.88) rotate(-6deg); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .mood-btn.on .mood-face.chalk { animation: none; } }
 .mood-label { font-size: 11px; font-weight: 500; }
 .journal-note { display: flex; gap: 8px; margin-top: 10px; }
 .journal-note input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; font-size: 16px; }
