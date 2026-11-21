@@ -653,6 +653,7 @@ button { font-family: inherit; }
 .mood-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 2px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface); cursor: pointer; color: var(--ink-soft); font: inherit; transition: background .15s ease, border-color .15s ease; }
 .mood-btn:hover:not(:disabled) { border-color: var(--accent); }
 .mood-btn.on { background: var(--mood-soft, var(--accent-soft)); border-color: var(--mood-c, var(--accent)); color: var(--ink); }
+.mood-btn.on:hover:not(:disabled) { border-color: var(--mood-c, var(--accent)); }
 .mood-btn .mood-face { color: var(--ink-faint); transition: color .15s ease; }
 .mood-btn:hover:not(:disabled) .mood-face { color: var(--ink-soft); }
 .mood-btn.on .mood-label { color: var(--mood-text, var(--accent)); font-weight: 600; }
