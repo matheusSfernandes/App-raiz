@@ -1,0 +1,5 @@
+Etapa 6, Metas com etapas (20/11/2026)
+
+Antes: o app tinha só uma meta única no Perfil, com contagem regressiva no Início (continua lá).
+Depois: tela Metas no menu, com várias metas, área, prazo e etapas; resumo das 3 próximas metas no Início.
+Imagens geradas com dados de exemplo no ambiente de teste.

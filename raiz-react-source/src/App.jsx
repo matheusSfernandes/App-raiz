@@ -17,6 +17,7 @@ import PerfilView from './components/views/PerfilView';
 import ConquistasView from './components/views/ConquistasView';
 import FocoView from './components/views/FocoView';
 import TreinoView from './components/views/TreinoView';
+import MetasView from './components/views/MetasView';
 
 const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
@@ -74,9 +75,10 @@ function AppShell() {
             </div>
           ) : (
             <div className="dashboard-grid">
-              {view === 'inicio' && <InicioView />}
+              {view === 'inicio' && <InicioView onNavigate={navigate} />}
               {view === 'rotina' && <RotinaView />}
               {view === 'habitos' && <HabitosView />}
+              {view === 'metas' && <MetasView />}
               {view === 'treino' && <TreinoView />}
               {view === 'financas' && <FinancasView />}
               {view === 'historico' && <HistoricoView key={viewTab || 'h'} initialTab={viewTab} />}

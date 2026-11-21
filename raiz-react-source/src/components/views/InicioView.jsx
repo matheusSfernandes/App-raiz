@@ -4,6 +4,7 @@ import { sb } from '../../lib/supabaseClient';
 import { todayKey, todayHabits, dateToKey, AREA_COLORS } from '../../lib/helpers';
 import { countsOnDay } from '../../lib/habits';
 import JournalCard from '../JournalCard';
+import { loadGoals, goalProgress, deadlineLabel } from '../../lib/goals';
 
 function GoalCard({ profile }) {
   const { goal_label, goal_date } = profile;
@@ -60,7 +61,34 @@ function TodayCard({ habits, tasks }) {
   );
 }
 
-export default function InicioView() {
+function GoalsHome({ onNavigate }) {
+  const { user } = useAppData();
+  const [goals, setGoals] = useState(null);
+  useEffect(() => { loadGoals(user.id).then(setGoals); }, [user.id]);
+  if (!goals) return null;
+  const active = goals.filter(g => !g.done_at)
+    .sort((a, b) => (a.target_date || '9999').localeCompare(b.target_date || '9999')).slice(0, 3);
+  if (!active.length) return null;
+  return (
+    <>
+      <div className="section-title">Metas<button className="link-btn" onClick={() => onNavigate?.('metas')}>Ver todas</button></div>
+      <div className="goals-home">
+        {active.map(g => {
+          const { done, total, pct } = goalProgress(g);
+          const dl = deadlineLabel(g);
+          return (
+            <button key={g.id} className="goals-home-row" onClick={() => onNavigate?.('metas')}>
+              <div className="goals-home-top"><span>{g.title}</span><span>{total ? `${done}/${total}` : ''}{dl ? `${total ? ' · ' : ''}${dl.text}` : ''}</span></div>
+              <div className="mini-track"><div className="mini-fill" style={{ width: `${pct}%`, background: AREA_COLORS[g.category] || 'var(--accent)' }} /></div>
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+export default function InicioView({ onNavigate }) {
   const { habits, tasks, transactions, profile } = useAppData();
   const today = todayKey();
 
@@ -99,6 +127,8 @@ export default function InicioView() {
       </div>
 
       <JournalCard />
+
+      <GoalsHome onNavigate={onNavigate} />
 
       <div className="section-title">Áreas da vida</div>
       {Object.keys(byArea).length === 0 ? (

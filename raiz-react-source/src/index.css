@@ -831,3 +831,36 @@ button { font-family: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ============ Metas ============ */
+.goal-item { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 10px; box-shadow: var(--shadow); overflow: hidden; }
+.goal-item.finished { opacity: .8; }
+.goal-head { display: block; width: 100%; text-align: left; background: none; border: none; padding: 14px; cursor: pointer; font: inherit; color: var(--ink); }
+.goal-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.goal-title { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+.goal-item.finished .goal-title { text-decoration: line-through; color: var(--ink-soft); }
+.goal-pct { font-size: 13px; font-weight: 600; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.goal-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 8px; font-size: 12.5px; color: var(--ink-soft); }
+.goal-meta .late { color: var(--danger); font-weight: 500; }
+.goal-body { border-top: 1px solid var(--line); padding: 10px 14px 14px; }
+.goal-notes { font-size: 13px; color: var(--ink-soft); margin-bottom: 8px; font-style: italic; }
+.goal-step { display: flex; align-items: center; gap: 10px; padding: 7px 0; }
+.goal-step-title { flex: 1; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+.goal-step.done .goal-step-title { text-decoration: line-through; color: var(--ink-faint); }
+.icon-btn { background: none; border: none; color: var(--ink-faint); cursor: pointer; padding: 6px; border-radius: 8px; display: inline-flex; flex-shrink: 0; }
+.icon-btn:hover { color: var(--ink); background: var(--surface-2); }
+.icon-btn svg { width: 16px; height: 16px; }
+.goal-add-step { display: flex; gap: 8px; margin: 8px 0 12px; }
+.goal-add-step input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; font-size: 16px; }
+.goal-add-step input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.goal-add-step .btn { width: auto; padding: 0 14px; }
+.goal-actions { display: flex; align-items: center; gap: 6px; }
+.goal-actions .btn { flex: 1; width: auto; }
+.goal-steps-input { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; font-family: inherit; font-size: 16px; margin-bottom: 8px; background: var(--bg); color: var(--ink); resize: vertical; }
+.goal-steps-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.goal-done-toggle { background: none; border: none; color: var(--accent); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; padding: 8px 2px; margin: 4px 0 8px; }
+.goals-home { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow); margin-bottom: 14px; }
+.goals-home-row { display: block; width: 100%; background: none; border: none; text-align: left; font: inherit; color: var(--ink); padding: 6px 0; cursor: pointer; }
+.goals-home-row + .goals-home-row { border-top: 1px solid var(--line); padding-top: 10px; }
+.goals-home-top { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+.goals-home-top span:last-child { color: var(--ink-soft); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }

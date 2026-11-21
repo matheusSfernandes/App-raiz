@@ -2,6 +2,7 @@ export const NAV_ITEMS = [
   { view: 'inicio', label: 'Início', path: 'M3 12l9-9 9 9M5 10v10h14V10', inTabbar: true },
   { view: 'rotina', label: 'Rotina', path: 'M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11', inTabbar: true },
   { view: 'habitos', label: 'Hábitos', circle: true, inTabbar: true },
+  { view: 'metas', label: 'Metas', flag: true, inTabbar: false },
   { view: 'treino', label: 'Treino', dumbbell: true, inTabbar: false },
   { view: 'financas', label: 'Finanças', path: 'M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6', inTabbar: true },
   { view: 'historico', label: 'Histórico', rect: true, inTabbar: true },
@@ -28,6 +29,9 @@ export function NavIcon({ item }) {
   }
   if (item.target) {
     return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /></svg>);
+  }
+  if (item.flag) {
+    return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5" /></svg>);
   }
   if (item.bell) {
     return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0112 0c0 5 2 6 2 6H4s2-1 2-6z" /><path d="M10 21a2 2 0 004 0" /></svg>);
