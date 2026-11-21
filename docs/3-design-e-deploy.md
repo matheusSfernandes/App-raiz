@@ -162,11 +162,10 @@ De tempos em tempos, conferir os avisos (advisors) do painel. O aviso de proteç
 | 3 | 17/11/2026 | Hábitos por quantidade, X vezes por semana, página do hábito |
 | 4 | 19/11/2026 | Finanças: categorias, contas fixas, resumo mensal e 6 meses |
 | 5 | 19 e 20/11/2026 | Diário e humor, revisão da semana, lembretes push (testados no iPhone), rostinhos a giz |
-| 6 | 20/11/2026 | Metas com etapas, funcionar sem internet, esta documentação |
+| 6 | 20 e 21/11/2026 | Metas com etapas, funcionar sem internet (testado no iPhone em modo avião), esta documentação |
 
 ## 10. Pendências e futuro
 
-- **Teste offline no iPhone:** abrir o app em modo avião, marcar algo, voltar a internet e conferir. Até lá, o item fica Em andamento.
 - **Etapa 7, preparar para vender:** próximos passos da checklist.
 - **Adiado por custo, só depois das primeiras vendas:** domínio próprio, Supabase Pro (com proteção contra senhas vazadas), registro no INPI, e-mail próprio (SMTP) para os e-mails de login, publicação nas lojas (Google Play e App Store).
 - **Ideias em espera:** IA para reescrever e classificar notas por importância (Claude API e Cloudflare Workers).

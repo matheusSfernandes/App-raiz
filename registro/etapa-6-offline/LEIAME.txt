@@ -4,3 +4,4 @@ Antes: sem internet o app não abria (o navegador mostrava erro) e nada podia se
 Depois: o app abre sem internet com os últimos dados salvos no aparelho; o que for marcado ou criado fica numa fila, já aparece na tela e é enviado sozinho quando a internet volta. Faixa no rodapé avisa o estado.
 Imagem: teste com conta fictícia, sem dados salvos ainda.
 Testes: 13 cenários da camada offline (src/lib/offline.js) aprovados.
+Teste no iPhone em modo avião: aprovado em 21/11/2026.

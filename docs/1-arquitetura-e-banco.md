@@ -319,7 +319,7 @@ Duas partes trabalham juntas:
 
 Limitações conhecidas: o backup .xlsx, os lembretes push e o teste de push precisam de internet; telas nunca abertas com internet aparecem vazias offline; o recálculo de sequências espera a sincronização.
 
-Situação: publicado em 20/11/2026, com 13 cenários da camada testados. Fica Em andamento na checklist até o teste no iPhone em modo avião.
+Situação: publicado em 20/11/2026, com 13 cenários da camada testados; teste no iPhone em modo avião aprovado em 21/11/2026.
 
 ## 9. Histórico das mudanças de banco
 
