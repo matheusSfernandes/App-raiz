@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import TimeInput from '../ui/TimeInput';
 import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
 import { CATEGORIES, DAY_LETTERS, todayKey, dateToKey } from '../../lib/helpers';
@@ -42,7 +43,8 @@ function HabitForm({ editing, onCancel }) {
   return (
     <div className="add-form open">
       <input type="text" placeholder="Nome do hábito (ex: Beber água)" value={name} onChange={e => setName(e.target.value)} />
-      <input type="time" value={time} onChange={e => setTime(e.target.value)} aria-label="Horário do lembrete" />
+      <div className="form-label">Horário do lembrete</div>
+      <TimeInput value={time} onChange={setTime} label="Horário do lembrete" />
       <select value={category} onChange={e => setCategory(e.target.value)}>
         {CATEGORIES.map(c => <option key={c}>{c}</option>)}
       </select>

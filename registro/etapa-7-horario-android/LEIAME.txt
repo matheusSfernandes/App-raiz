@@ -1,0 +1,4 @@
+Correção: escolher horário no Android (21/11/2026)
+
+Antes: o campo de horário (hábitos e tarefas) abria o relógio do navegador. Num Android de um amigo, o relógio abriu cortado e o botão "Definir" ficou fora da tela, sem como confirmar (imagem antes-relogio-cortado-android.png).
+Depois: o horário é escolhido em duas listas, hora e minuto (de 5 em 5; minutos já salvos fora desse passo continuam aparecendo), com a opção "Sem horário". Usa a lista padrão do celular, que cabe em qualquer tela. Componente src/components/ui/TimeInput.jsx, usado em Hábitos (horário do lembrete) e Rotina (início e fim da tarefa).

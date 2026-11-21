@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import TimeInput from '../ui/TimeInput';
 import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
 import { CATEGORIES, DAY_LETTERS, categorizeTask, todayKey, dateToKey } from '../../lib/helpers';
@@ -69,10 +70,10 @@ function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
       {hasDate && (
         <>
           <div className="two"><input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
-          <div className="two">
-            <input type="time" value={start} onChange={e => setStart(e.target.value)} />
-            <input type="time" value={end} onChange={e => setEnd(e.target.value)} />
-          </div>
+          <div className="form-label">Início</div>
+          <TimeInput value={start} onChange={setStart} label="Início" />
+          <div className="form-label">Fim (opcional)</div>
+          <TimeInput value={end} onChange={setEnd} label="Fim" />
           {!editing && (
             <select value={repeat} onChange={e => setRepeat(e.target.value)}>
               <option value="none">Não repete</option>

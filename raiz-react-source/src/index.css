@@ -872,3 +872,9 @@ button { font-family: inherit; }
   box-shadow: var(--shadow); max-width: calc(100% - 32px); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .offline-bar.syncing { background: var(--accent); color: var(--accent-ink); }
+
+/* ============ Horário (TimeInput) ============ */
+.time-input { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.time-input select { flex: 1; min-width: 0; margin-bottom: 0 !important; }
+.time-input select:disabled { opacity: .5; }
+.time-sep { color: var(--ink-faint); font-weight: 600; }
