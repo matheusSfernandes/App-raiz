@@ -46,7 +46,7 @@ export default function AuthScreen() {
 
     if (!email || !password) { setError('Preencha e-mail e senha.'); return; }
     if (mode === 'signup') {
-      const { data, error } = await sb.auth.signUp({ email, password });
+      const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
       if (error) { setError(error.message); return; }
       if (data.user && !data.session) {
         setErrorColor('var(--accent)');
