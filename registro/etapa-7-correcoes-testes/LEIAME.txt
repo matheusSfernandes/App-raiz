@@ -29,3 +29,10 @@ Bônus B4: o aviso vermelho antigo some quando a pessoa volta a digitar.
 M2. Tarefa com fim antes do início
 Antes: início 15:00 e fim 09:00 era salvo.
 Depois: aviso "O fim precisa ser depois do início." e a tarefa não é gravada.
+
+Conferido no app publicado em 24/11/2026 (conta de teste):
+- Hábito sem nome: "Dê um nome ao hábito."; Quantidade sem meta: "Informe a meta, ex: 2000."; meta 999999: "Meta: no máximo 100.000." (depois-habito-meta-limite.jpg)
+- 3 cliques no mesmo instante em Salvar: 1 hábito gravado, botão em "Salvando…" (o hábito de teste foi apagado em seguida)
+- Finanças com 99.999.999.999: "O valor máximo é R$ 1.000.000." (depois-financas-valor-limite.jpg)
+- Tarefa 15h a 09h: "O fim precisa ser depois do início." (depois-tarefa-fim-antes-inicio.jpg)
+- M1 (login em português) não foi testado ao vivo para não deslogar a conta; conferido pelo código e pela compilação.
