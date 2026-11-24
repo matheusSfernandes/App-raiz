@@ -13,3 +13,11 @@ A lixeira saiu da linha do hábito (ficava colada no lápis); agora é "Apagar h
 M5. Recarregar volta ao Início
 Antes: recarregar a página ou voltar de outro app no celular levava ao Início; o Voltar do navegador saía do app.
 Depois: a tela atual fica no endereço (ex: app-raiz.pages.dev/?view=rotina). Recarregar mantém a tela e o Voltar do navegador ou do Android volta para a tela anterior. Os lembretes push continuam abrindo a tela certa.
+
+Conferido no app publicado em 24/11/2026 (conta de teste, tela de 390 px):
+- Saldo atual de −R$ 199.999.999.998,00 cabe numa linha, com o sinal junto; Entradas, Saídas e Saldo do mês em forma curta (depois-financas-celular-390px.jpg)
+- Saldo do Início: "−R$ 200 bi", valor inteiro ao segurar o dedo ou passar o mouse (depois-inicio-saldo-celular.jpg)
+- Tabela dos 6 meses: 315 px visíveis de 444 px, rolando dentro do cartão; nada passa da largura da tela
+- Hábitos: sem lixeira na linha; "Apagar hábito" no formulário de edição (depois-habito-apagar-no-formulario.jpg)
+- Recarregar em Finanças manteve Finanças; Finanças, Rotina e Voltar retornou a Finanças
+- As áreas de toque de 44 px valem só em tela de toque; conferir no celular.
