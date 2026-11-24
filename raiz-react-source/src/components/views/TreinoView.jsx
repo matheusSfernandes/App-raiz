@@ -86,8 +86,8 @@ function PlanForm({ editing, onCancel, onSaved }) {
       <button type="button" className="add-toggle" onClick={() => setRows(r => [...r, { name: '', sets: 3, reps: 10 }])}>+ Exercício</button>
       {hint && <div className="form-hint" role="alert">{hint}</div>}
       <div className="btn-row">
-        <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : 'Salvar treino'}</button>
         <button className="btn ghost" onClick={onCancel}>Cancelar</button>
+        <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : 'Salvar treino'}</button>
       </div>
     </div>
   );
@@ -248,8 +248,8 @@ function TrainTab({ plans, draft, setDraft, lastByExercise, onFinished, goToPlan
         );
       })}
       <div className="btn-row" style={{ marginTop: 6 }}>
-        <button className="btn" onClick={finish} disabled={saving}>{saving ? 'Salvando…' : 'Concluir treino'}</button>
         <button className="btn ghost" onClick={cancel}>Descartar</button>
+        <button className="btn" onClick={finish} disabled={saving}>{saving ? 'Salvando…' : 'Concluir treino'}</button>
       </div>
     </>
   );

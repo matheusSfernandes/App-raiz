@@ -8,7 +8,7 @@ import ResetPasswordScreen from './components/ResetPasswordScreen';
 import Sidebar from './components/Sidebar';
 import TabBar from './components/TabBar';
 import Toasts from './components/Toasts';
-import { HamburgerIcon } from './components/ui/Icons';
+import { HamburgerIcon, NAV_ITEMS } from './components/ui/Icons';
 import { AppDataProvider, useAppData } from './context/AppDataContext';
 
 import InicioView from './components/views/InicioView';
@@ -60,10 +60,11 @@ function AppShell() {
     };
   }, []);
 
-  function navigate(v) {
+  // intent 'novo': abre a tela já com o formulário de criação aberto (usado pelo guia do primeiro acesso)
+  function navigate(v, intent = null) {
     if (v !== view) history.pushState({ view: v }, '', v === 'inicio' ? location.pathname : `?view=${v}`);
     setView(v);
-    setViewTab(null);
+    setViewTab(intent);
     setDrawerOpen(false);
     const mainEl = document.querySelector('.main');
     if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'instant' });
@@ -73,6 +74,11 @@ function AppShell() {
   const hour = now.getHours();
   const greet = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
   const nameSuffix = profile.name ? `, ${profile.name.split(' ')[0]}` : '';
+  // B1 (testes 24/11): fora do Início, o título mostra o nome da tela atual
+  const viewLabel = NAV_ITEMS.find(i => i.view === view)?.label || 'Raiz';
+  const isHome = view === 'inicio';
+  useEffect(() => { document.title = isHome ? 'Raiz' : `${viewLabel} · Raiz`; }, [isHome, viewLabel]);
+  const startNew = viewTab === 'novo';
 
   return (
     <div className="shell">
@@ -84,8 +90,14 @@ function AppShell() {
             <button className="logout-btn" onClick={() => sb.auth.signOut()}>Sair</button>
           </div>
           <div className="eyebrow">{DAY_NAMES[now.getDay()].toUpperCase()}, {now.toLocaleDateString('pt-BR')}</div>
-          <div className="greeting">{greet}{nameSuffix}</div>
-          <div className="quote">"{profile.quote || 'Você não precisa ser perfeito, só precisa ser persistente.'}"</div>
+          {isHome ? (
+            <>
+              <h1 className="greeting">{greet}{nameSuffix}</h1>
+              <div className="quote">"{profile.quote || 'Você não precisa ser perfeito, só precisa ser persistente.'}"</div>
+            </>
+          ) : (
+            <h1 className="greeting view-title">{viewLabel}</h1>
+          )}
         </div>
 
         <div className="content">
@@ -97,11 +109,11 @@ function AppShell() {
           ) : (
             <div className="dashboard-grid">
               {view === 'inicio' && <InicioView onNavigate={navigate} />}
-              {view === 'rotina' && <RotinaView />}
-              {view === 'habitos' && <HabitosView />}
+              {view === 'rotina' && <RotinaView startNew={startNew} />}
+              {view === 'habitos' && <HabitosView startNew={startNew} />}
               {view === 'metas' && <MetasView />}
               {view === 'treino' && <TreinoView />}
-              {view === 'financas' && <FinancasView />}
+              {view === 'financas' && <FinancasView startNew={startNew} />}
               {view === 'historico' && <HistoricoView key={viewTab || 'h'} initialTab={viewTab} />}
               {view === 'perfil' && <PerfilView onNavigate={navigate} />}
               {view === 'conquistas' && <ConquistasView />}

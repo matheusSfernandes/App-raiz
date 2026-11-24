@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import TimeInput from '../ui/TimeInput';
 import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
-import { CATEGORIES, DAY_LETTERS, todayKey, dateToKey } from '../../lib/helpers';
+import { CATEGORIES, DAY_LETTERS, DAY_NAMES, todayKey, dateToKey } from '../../lib/helpers';
 import { ALL_DAYS, isFlexible, isNumeric, bestStreak, formatAmount, weekStartKey, createdKey } from '../../lib/habits';
 import { CheckIcon, FlameIcon, PencilIcon } from '../ui/Icons';
 import { burstConfetti, playSuccessSound } from '../../lib/effects';
@@ -81,9 +81,9 @@ function HabitForm({ editing, onCancel }) {
         <button type="button" className={`seg-btn ${freq === 'flex' ? 'active' : ''}`} onClick={() => setFreq('flex')}>Vezes por semana</button>
       </div>
       {freq === 'fixed' ? (
-        <div className="day-picker">
+        <div className="day-picker" role="group" aria-label="Dias da semana">
           {DAY_LETTERS.map((letter, i) => (
-            <button type="button" key={i} className={`day-chip ${days.includes(i) ? 'on' : ''}`} onClick={() => toggleDay(i)}>{letter}</button>
+            <button type="button" key={i} className={`day-chip ${days.includes(i) ? 'on' : ''}`} aria-label={DAY_NAMES[i]} aria-pressed={days.includes(i)} title={DAY_NAMES[i]} onClick={() => toggleDay(i)}>{letter}</button>
           ))}
         </div>
       ) : (
@@ -97,8 +97,8 @@ function HabitForm({ editing, onCancel }) {
 
       {hint && <div className="form-hint" role="alert">{hint}</div>}
       <div className="btn-row">
-        <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
         <button className="btn ghost" onClick={onCancel}>Cancelar</button>
+        <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
       </div>
       {editing && (
         <button type="button" className="link-btn danger-link" onClick={() => {
@@ -355,9 +355,9 @@ function HabitDetail({ habit, onBack, onEdit }) {
 
 /* ---------- Tela ---------- */
 
-export default function HabitosView() {
+export default function HabitosView({ startNew = false }) {
   const { habits } = useAppData();
-  const [formOpen, setFormOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(startNew);
   const [editing, setEditing] = useState(null);
   const [openId, setOpenId] = useState(null);
 

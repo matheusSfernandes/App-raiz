@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import TimeInput from '../ui/TimeInput';
 import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
-import { CATEGORIES, DAY_LETTERS, categorizeTask, todayKey, dateToKey } from '../../lib/helpers';
+import { CATEGORIES, DAY_LETTERS, DAY_NAMES, categorizeTask, todayKey, dateToKey } from '../../lib/helpers';
 import { loadRecurring, materializeRecurring, describeRecurrence } from '../../lib/recurring';
 import { CheckIcon, FlagIcon, PencilIcon, TrashIcon, CalendarIcon, ListIcon, MoreIcon } from '../ui/Icons';
 import { burstConfetti, playSuccessSound } from '../../lib/effects';
@@ -98,9 +98,10 @@ function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
             </select>
           )}
           {!editing && repeat === 'weekly' && (
-            <div className="day-picker">
+            <div className="day-picker" role="group" aria-label="Dias da semana">
               {DAY_LETTERS.map((letter, i) => (
                 <button type="button" key={i} className={`day-chip ${repeatDays.includes(i) ? 'on' : ''}`}
+                  aria-label={DAY_NAMES[i]} aria-pressed={repeatDays.includes(i)} title={DAY_NAMES[i]}
                   onClick={() => setRepeatDays(p => p.includes(i) ? p.filter(x => x !== i) : [...p, i])}>{letter}</button>
               ))}
             </div>
@@ -122,8 +123,8 @@ function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
       </label>
       {hint && <div className="form-hint" role="alert">{hint}</div>}
       <div className="btn-row">
-        <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
         <button className="btn ghost" onClick={onCancel}>Cancelar</button>
+        <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
       </div>
     </div>
   );
@@ -262,7 +263,7 @@ function TaskRow({ task, subs, rule, showReschedule, onEdit, onChanged }) {
   );
 }
 
-export default function RotinaView() {
+export default function RotinaView({ startNew = false }) {
   const { user } = useAppData();
   const [noDateMode, setNoDateMode] = useState(false);
   const [recMode, setRecMode] = useState(false);
@@ -272,7 +273,7 @@ export default function RotinaView() {
   const [viewedTasks, setViewedTasks] = useState([]);
   const [subtasksByTask, setSubtasksByTask] = useState({});
 
-  const [formOpen, setFormOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(startNew);
   const [editing, setEditing] = useState(null);
 
   const loadSubtasksFor = useCallback(async (list) => {

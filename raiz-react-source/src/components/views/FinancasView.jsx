@@ -63,8 +63,8 @@ function TxForm({ tx, defaultDate, onCancel }) {
       </div>
       {hint && <div className="form-hint" role="alert">{hint}</div>}
       <div className="btn-row">
-        <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : tx ? 'Salvar alterações' : 'Salvar'}</button>
         <button className="btn ghost" onClick={onCancel}>Cancelar</button>
+        <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : tx ? 'Salvar alterações' : 'Salvar'}</button>
       </div>
     </div>
   );
@@ -118,8 +118,8 @@ function BillForm({ bill, onCancel }) {
       </div>
       {hint && <div className="form-hint" role="alert">{hint}</div>}
       <div className="btn-row">
-        <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : bill ? 'Salvar alterações' : 'Salvar conta'}</button>
         <button className="btn ghost" onClick={onCancel}>Cancelar</button>
+        <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : bill ? 'Salvar alterações' : 'Salvar conta'}</button>
       </div>
     </div>
   );
@@ -356,11 +356,11 @@ function TxList({ month, catFilter, setCatFilter }) {
 
 // ---------- Tela ----------
 
-export default function FinancasView() {
+export default function FinancasView({ startNew = false }) {
   const { transactions } = useAppData();
   const [month, setMonth] = useState(currentMonth());
   const [tab, setTab] = useState('resumo');
-  const [formOpen, setFormOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(startNew);
   const [catFilter, setCatFilter] = useState(null);
   const balance = useMemo(() => transactions.reduce((s, t) => s + (t.type === 'in' ? Number(t.amount) : -Number(t.amount)), 0), [transactions]);
   const isCurrent = month === currentMonth();

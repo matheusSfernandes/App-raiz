@@ -170,8 +170,8 @@ export default function PerfilView({ onNavigate }) {
           <div className="profile-field"><label>Limite de gastos (R$)</label><input type="number" value={draft.budgetLimit} onChange={e => setField('budgetLimit', e.target.value)} placeholder="Ex: 1500" /></div>
 
           <div className="btn-row" style={{ marginTop: 16 }}>
-            <button className="btn" onClick={handleSave}>Salvar</button>
             <button className="btn ghost" onClick={cancelEditing}>Cancelar</button>
+            <button className="btn" onClick={handleSave}>Salvar</button>
           </div>
         </>
       )}

@@ -5,6 +5,7 @@ import { todayKey, todayHabits, dateToKey, AREA_COLORS } from '../../lib/helpers
 import { countsOnDay } from '../../lib/habits';
 import { moneyFit } from '../../lib/finance';
 import JournalCard from '../JournalCard';
+import WelcomeGuide from '../WelcomeGuide';
 import { loadGoals, goalProgress, deadlineLabel } from '../../lib/goals';
 
 function GoalCard({ profile }) {
@@ -118,6 +119,7 @@ export default function InicioView({ onNavigate }) {
 
   return (
     <div className="view active">
+      <WelcomeGuide onNavigate={onNavigate} />
       <GoalCard profile={profile} />
       <TodayCard habits={habits} tasks={tasks} />
       <div className="stat-grid">
@@ -133,7 +135,13 @@ export default function InicioView({ onNavigate }) {
 
       <div className="section-title">Áreas da vida</div>
       {Object.keys(byArea).length === 0 ? (
-        <div className="empty">Adicione hábitos ou tarefas com categorias pra ver seu progresso por área.</div>
+        <div className="empty">
+          Adicione hábitos ou tarefas com categorias para ver seu progresso por área.
+          <div className="empty-actions">
+            <button className="btn ghost" onClick={() => onNavigate?.('habitos', 'novo')}>Criar hábito</button>
+            <button className="btn ghost" onClick={() => onNavigate?.('rotina', 'novo')}>Criar tarefa</button>
+          </div>
+        </div>
       ) : (
         Object.entries(byArea).map(([cat, info]) => {
           const pct = info.total ? Math.round((info.done / info.total) * 100) : 0;
