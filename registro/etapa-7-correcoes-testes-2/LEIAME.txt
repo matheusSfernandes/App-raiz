@@ -21,3 +21,8 @@ Conferido no app publicado em 24/11/2026 (conta de teste, tela de 390 px):
 - Hábitos: sem lixeira na linha; "Apagar hábito" no formulário de edição (depois-habito-apagar-no-formulario.jpg)
 - Recarregar em Finanças manteve Finanças; Finanças, Rotina e Voltar retornou a Finanças
 - As áreas de toque de 44 px valem só em tela de toque; conferir no celular.
+
+Login: Lembrar de mim (pedido de Matheus em 24/11/2026)
+Antes: ao tocar em Sair, a tela de login voltava vazia; não havia opção de continuar conectado.
+Depois: caixa "Lembrar de mim" (marcada por padrão). Marcada: o e-mail fica guardado no aparelho e já vem preenchido, o cursor vai para a senha (o iPhone ou o Google oferecem a senha salva), e a sessão continua aberta até tocar em Sair. Desmarcada: o e-mail não é guardado e a sessão termina quando o app ou a aba é fechado. "Usar outro e-mail" limpa o e-mail guardado. A senha nunca é guardada pelo app, só pelo gerenciador de senhas do aparelho.
+Print: depois-login-lembrar-de-mim.png (tela de 390 px, gerado a partir do código publicado)
