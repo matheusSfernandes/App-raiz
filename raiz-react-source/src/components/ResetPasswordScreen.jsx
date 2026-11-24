@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { sb } from '../lib/supabaseClient';
+import { authErrorPt } from '../lib/authErrors';
 import { EyeIcon, EyeOffIcon, LogoMark } from './ui/Icons';
 
 function PasswordInput({ value, onChange, placeholder, name }) {
@@ -28,7 +29,7 @@ export default function ResetPasswordScreen({ onDone }) {
     if (password.length < 6) { setError('A senha precisa ter pelo menos 6 caracteres.'); return; }
     if (password !== confirm) { setError('As senhas não coincidem.'); return; }
     const { error } = await sb.auth.updateUser({ password });
-    if (error) { setError(error.message); return; }
+    if (error) { setError(authErrorPt(error)); return; }
     setSuccess(true);
   }
 

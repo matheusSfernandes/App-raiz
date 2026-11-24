@@ -3,6 +3,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
 import { todayKey, formatKeyBR } from '../../lib/helpers';
 import { CheckIcon, PencilIcon, TrashIcon } from '../ui/Icons';
+import { LIMITS, toNum, maxMsg } from '../../lib/validate';
 import { burstConfetti, playSuccessSound } from '../../lib/effects';
 
 const DRAFT_KEY = 'raiz_treino_em_andamento';
@@ -36,9 +37,16 @@ function PlanForm({ editing, onCancel, onSaved }) {
     setRows(r => r.map((row, idx) => (idx === i ? { ...row, [key]: value } : row)));
   }
 
+  const [tried, setTried] = useState(false);
+  const clean = rows.filter(r => r.name.trim());
+  const over = clean.some(r => toNum(r.sets) > LIMITS.sets) ? maxMsg('Séries', LIMITS.sets)
+    : clean.some(r => toNum(r.reps) > LIMITS.reps) ? maxMsg('Repetições', LIMITS.reps) : '';
+  const missing = !name.trim() ? 'Dê um nome ao treino.' : !clean.length ? 'Adicione pelo menos um exercício com nome.' : '';
+  const hint = over || (tried ? missing : '');
+
   async function handleSave() {
-    const clean = rows.filter(r => r.name.trim());
-    if (!name.trim() || !clean.length || saving) return;
+    if (saving) return;
+    if (over || missing) { setTried(true); return; }
     setSaving(true);
     let planId = editing?.id;
     if (planId) {
@@ -67,12 +75,13 @@ function PlanForm({ editing, onCancel, onSaved }) {
       {rows.map((r, i) => (
         <div className="ex-row" key={i}>
           <input type="text" placeholder="Ex: Supino reto" value={r.name} onChange={e => setRow(i, 'name', e.target.value)} />
-          <input type="number" inputMode="numeric" min="1" value={r.sets} onChange={e => setRow(i, 'sets', e.target.value)} />
-          <input type="number" inputMode="numeric" min="1" value={r.reps} onChange={e => setRow(i, 'reps', e.target.value)} />
+          <input type="number" inputMode="numeric" min="1" max={LIMITS.sets} value={r.sets} onChange={e => setRow(i, 'sets', e.target.value)} />
+          <input type="number" inputMode="numeric" min="1" max={LIMITS.reps} value={r.reps} onChange={e => setRow(i, 'reps', e.target.value)} />
           <button type="button" className="del-btn" aria-label="Remover exercício" onClick={() => setRows(rs => rs.filter((_, idx) => idx !== i))}><TrashIcon /></button>
         </div>
       ))}
       <button type="button" className="add-toggle" onClick={() => setRows(r => [...r, { name: '', sets: 3, reps: 10 }])}>+ Exercício</button>
+      {hint && <div className="form-hint" role="alert">{hint}</div>}
       <div className="btn-row">
         <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : 'Salvar treino'}</button>
         <button className="btn ghost" onClick={onCancel}>Cancelar</button>
@@ -170,6 +179,9 @@ function TrainTab({ plans, draft, setDraft, lastByExercise, onFinished, goToPlan
   async function finish() {
     if (!doneSets) { showToast('Marque pelo menos uma série feita.'); return; }
     if (saving) return;
+    const doneList = draft.exercises.flatMap(ex => ex.sets.filter(s => s.done));
+    if (doneList.some(s => toNum(s.reps) > LIMITS.reps)) { showToast(maxMsg('Repetições', LIMITS.reps)); return; }
+    if (doneList.some(s => toNum(s.weight) > LIMITS.weight)) { showToast(maxMsg('Carga', LIMITS.weight, ' kg')); return; }
     setSaving(true);
     const { data: session, error } = await sb.from('workout_sessions').insert({
       user_id: user.id, plan_id: draft.planId, plan_name: draft.planName, date_key: todayKey(),
@@ -220,8 +232,8 @@ function TrainTab({ plans, draft, setDraft, lastByExercise, onFinished, goToPlan
             {ex.sets.map((s, si) => (
               <div className={`set-row ${s.done ? 'done' : ''}`} key={si}>
                 <span className="set-n">{si + 1}</span>
-                <input type="number" inputMode="numeric" value={s.reps} onChange={e => updateSet(ei, si, { reps: e.target.value })} />
-                <input type="number" inputMode="decimal" step="0.5" value={s.weight} placeholder="0" onChange={e => updateSet(ei, si, { weight: e.target.value })} />
+                <input type="number" inputMode="numeric" min="0" max={LIMITS.reps} value={s.reps} onChange={e => updateSet(ei, si, { reps: e.target.value })} />
+                <input type="number" inputMode="decimal" step="0.5" min="0" max={LIMITS.weight} value={s.weight} placeholder="0" onChange={e => updateSet(ei, si, { weight: e.target.value })} />
                 <button className={`check ${s.done ? 'checked' : ''}`} aria-label={s.done ? 'Desmarcar série' : 'Série feita'} onClick={e => toggleSet(ei, si, e)}><CheckIcon /></button>
               </div>
             ))}

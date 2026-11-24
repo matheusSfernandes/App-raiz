@@ -1,0 +1,31 @@
+Etapa 7, correções dos testes de 24/11/2026 (A1, A2, A3, M1, M2)
+Relatório de origem: registro/testes-2026-11-24/RELATORIO.md (prints do antes: 01, 02, 03, 05, 06)
+
+A1. Clique repetido em Salvar
+Antes: Hábitos, Rotina (tarefa e subtarefa) e Finanças (movimentação e conta fixa) gravavam uma vez por clique; 3 cliques = 3 registros.
+Depois: o botão trava e mostra "Salvando…" até a gravação terminar, como já era em Metas e Treino.
+
+A2. Formulário inválido
+Antes: nada acontecia e a pessoa não sabia o que faltava.
+Depois: aparece um aviso vermelho acima dos botões dizendo o que falta, por exemplo:
+"Dê um nome ao hábito.", "Informe a meta, ex: 2000.", "Marque pelo menos um dia da semana.",
+"Dê um título à tarefa.", "Escreva uma descrição, ex: Mercado.", "Informe um valor maior que zero.",
+"Informe o dia do mês, de 1 a 31.", "Dê um nome ao treino.". O aviso some sozinho quando a pessoa corrige.
+
+A3. Valores sem limite
+Antes: R$ 99.999.999.999 era aceito.
+Depois, no app (aviso imediato ao digitar) e no banco (segunda proteção, sql/2026-11-24-limites-valores.sql):
+Finanças até R$ 1.000.000 por movimentação ou conta fixa; meta de hábito até 100.000;
+Treino com séries até 100, repetições até 1.000 e carga até 1.000 kg.
+As regras do banco valem só para gravações novas; os dois registros gigantes da conta de teste continuam lá.
+
+M1. Erros do login em inglês
+Antes: "Invalid login credentials".
+Depois: "E-mail ou senha incorretos.", "Confirme seu e-mail antes de entrar.", "A senha precisa ter pelo menos 6 caracteres.",
+"Muitas tentativas, aguarde alguns minutos e tente de novo." e outros (src/lib/authErrors.js), também na tela de nova senha.
+O botão mostra "Entrando…", "Criando conta…" ou "Enviando…" enquanto espera.
+Bônus B4: o aviso vermelho antigo some quando a pessoa volta a digitar.
+
+M2. Tarefa com fim antes do início
+Antes: início 15:00 e fim 09:00 era salvo.
+Depois: aviso "O fim precisa ser depois do início." e a tarefa não é gravada.

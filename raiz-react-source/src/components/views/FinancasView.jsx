@@ -6,6 +6,7 @@ import {
   monthTotals, spendingByCategory, billsForMonth,
 } from '../../lib/finance';
 import { TrashIcon, PencilIcon } from '../ui/Icons';
+import { LIMITS, toNum, moneyProblem } from '../../lib/validate';
 
 // ---------- Formulários ----------
 
@@ -17,11 +18,21 @@ function TxForm({ tx, defaultDate, onCancel }) {
   const [category, setCategory] = useState(tx?.category || '');
   const [date, setDate] = useState(tx?.date_key || defaultDate || todayKey());
 
+  const [saving, setSaving] = useState(false);
+  const [tried, setTried] = useState(false);
+  const amt = toNum(amount);
+  const over = amt > LIMITS.money ? moneyProblem(amount) : '';
+  const missing = !desc.trim() ? 'Escreva uma descrição, ex: Mercado.' : moneyProblem(amount);
+  const hint = over || (tried ? missing : '');
+
   async function handleSave() {
-    const amt = parseFloat(String(amount).replace(',', '.'));
-    if (!desc.trim() || isNaN(amt) || amt <= 0) return;
-    const fields = { description: desc.trim(), amount: amt, type, category: category || null, date_key: date || todayKey() };
-    if (tx) await updateTx(tx.id, fields); else await addTx(fields);
+    if (saving) return;
+    if (over || missing) { setTried(true); return; }
+    setSaving(true);
+    const fields = { description: desc.trim(), amount: Math.round(amt * 100) / 100, type, category: category || null, date_key: date || todayKey() };
+    try {
+      if (tx) await updateTx(tx.id, fields); else await addTx(fields);
+    } finally { setSaving(false); }
     onCancel();
   }
 
@@ -29,7 +40,7 @@ function TxForm({ tx, defaultDate, onCancel }) {
     <div className="add-form open">
       <input type="text" placeholder="Descrição" value={desc} onChange={e => setDesc(e.target.value)} />
       <div className="two">
-        <input type="number" inputMode="decimal" placeholder="Valor (R$)" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} />
+        <input type="number" inputMode="decimal" placeholder="Valor (R$)" step="0.01" min="0" max={LIMITS.money} value={amount} onChange={e => setAmount(e.target.value)} />
         <select value={type} onChange={e => { setType(e.target.value); setCategory(''); }}>
           <option value="out">Saída</option>
           <option value="in">Entrada</option>
@@ -42,8 +53,9 @@ function TxForm({ tx, defaultDate, onCancel }) {
         </select>
         <input type="date" value={date} onChange={e => setDate(e.target.value)} aria-label="Data" />
       </div>
+      {hint && <div className="form-hint" role="alert">{hint}</div>}
       <div className="btn-row">
-        <button className="btn" onClick={handleSave}>{tx ? 'Salvar alterações' : 'Salvar'}</button>
+        <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : tx ? 'Salvar alterações' : 'Salvar'}</button>
         <button className="btn ghost" onClick={onCancel}>Cancelar</button>
       </div>
     </div>
@@ -58,11 +70,22 @@ function BillForm({ bill, onCancel }) {
   const [category, setCategory] = useState(bill?.category || '');
   const [day, setDay] = useState(bill ? String(bill.day_of_month) : '');
 
+  const [saving, setSaving] = useState(false);
+  const [tried, setTried] = useState(false);
+  const amt = toNum(amount);
+  const d = parseInt(day, 10);
+  const over = amt > LIMITS.money ? moneyProblem(amount) : '';
+  const missing = !desc.trim() ? 'Dê um nome à conta, ex: Aluguel.'
+    : moneyProblem(amount) || (!(d >= 1 && d <= 31) ? 'Informe o dia do mês, de 1 a 31.' : '');
+  const hint = over || (tried ? missing : '');
+
   async function handleSave() {
-    const amt = parseFloat(String(amount).replace(',', '.'));
-    const d = parseInt(day, 10);
-    if (!desc.trim() || isNaN(amt) || amt <= 0 || !(d >= 1 && d <= 31)) return;
-    await saveFixedBill(bill?.id, { description: desc.trim(), amount: amt, type, category: category || null, day_of_month: d });
+    if (saving) return;
+    if (over || missing) { setTried(true); return; }
+    setSaving(true);
+    try {
+      await saveFixedBill(bill?.id, { description: desc.trim(), amount: Math.round(amt * 100) / 100, type, category: category || null, day_of_month: d });
+    } finally { setSaving(false); }
     onCancel();
   }
 
@@ -70,7 +93,7 @@ function BillForm({ bill, onCancel }) {
     <div className="add-form open">
       <input type="text" placeholder="Nome (ex: Aluguel, Internet, Salário)" value={desc} onChange={e => setDesc(e.target.value)} />
       <div className="two">
-        <input type="number" inputMode="decimal" placeholder="Valor (R$)" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} />
+        <input type="number" inputMode="decimal" placeholder="Valor (R$)" step="0.01" min="0" max={LIMITS.money} value={amount} onChange={e => setAmount(e.target.value)} />
         <input type="number" inputMode="numeric" placeholder="Dia do mês" min="1" max="31" value={day} onChange={e => setDay(e.target.value)} />
       </div>
       <div className="two">
@@ -83,8 +106,9 @@ function BillForm({ bill, onCancel }) {
           {catsFor(type).map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
+      {hint && <div className="form-hint" role="alert">{hint}</div>}
       <div className="btn-row">
-        <button className="btn" onClick={handleSave}>{bill ? 'Salvar alterações' : 'Salvar conta'}</button>
+        <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : bill ? 'Salvar alterações' : 'Salvar conta'}</button>
         <button className="btn ghost" onClick={onCancel}>Cancelar</button>
       </div>
     </div>

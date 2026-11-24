@@ -6,6 +6,7 @@ import { CATEGORIES, DAY_LETTERS, todayKey, dateToKey } from '../../lib/helpers'
 import { ALL_DAYS, isFlexible, isNumeric, bestStreak, formatAmount, weekStartKey, createdKey } from '../../lib/habits';
 import { CheckIcon, FlameIcon, PencilIcon, TrashIcon } from '../ui/Icons';
 import { burstConfetti, playSuccessSound } from '../../lib/effects';
+import { LIMITS, toNum, maxMsg } from '../../lib/validate';
 
 /* ---------- Formulário ---------- */
 
@@ -25,18 +26,29 @@ function HabitForm({ editing, onCancel }) {
     setDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
   }
 
+  const [saving, setSaving] = useState(false);
+  const [tried, setTried] = useState(false);
+  const t = toNum(target);
+  const over = kind === 'amount' && t > LIMITS.habitTarget ? maxMsg('Meta', LIMITS.habitTarget) : '';
+  const missing = !name.trim() ? 'Dê um nome ao hábito.'
+    : kind === 'amount' && !(t > 0) ? 'Informe a meta, ex: 2000.'
+    : freq === 'fixed' && !days.length ? 'Marque pelo menos um dia da semana.'
+    : '';
+  const hint = over || (tried ? missing : '');
+
   async function handleSave() {
-    if (!name.trim()) return;
-    if (freq === 'fixed' && !days.length) return;
-    const t = parseFloat(String(target).replace(',', '.'));
-    if (kind === 'amount' && !(t > 0)) return;
-    await saveHabit(editing?.id || null, {
-      name: name.trim(), time, category,
-      days_of_week: freq === 'flex' ? ALL_DAYS : days,
-      weekly_target: freq === 'flex' ? Number(weekly) : null,
-      target: kind === 'amount' ? t : null,
-      unit: kind === 'amount' ? (unit.trim() || null) : null,
-    });
+    if (saving) return;
+    if (over || missing) { setTried(true); return; }
+    setSaving(true);
+    try {
+      await saveHabit(editing?.id || null, {
+        name: name.trim(), time, category,
+        days_of_week: freq === 'flex' ? ALL_DAYS : days,
+        weekly_target: freq === 'flex' ? Number(weekly) : null,
+        target: kind === 'amount' ? t : null,
+        unit: kind === 'amount' ? (unit.trim() || null) : null,
+      });
+    } finally { setSaving(false); }
     onCancel();
   }
 
@@ -56,7 +68,7 @@ function HabitForm({ editing, onCancel }) {
       </div>
       {kind === 'amount' && (
         <div className="two">
-          <input type="number" inputMode="decimal" placeholder="Meta (ex: 2000)" value={target} onChange={e => setTarget(e.target.value)} />
+          <input type="number" inputMode="decimal" placeholder="Meta (ex: 2000)" min="0" max={LIMITS.habitTarget} value={target} onChange={e => setTarget(e.target.value)} />
           <input type="text" placeholder="Unidade (ex: ml, páginas)" value={unit} onChange={e => setUnit(e.target.value)} />
         </div>
       )}
@@ -81,8 +93,9 @@ function HabitForm({ editing, onCancel }) {
         </>
       )}
 
+      {hint && <div className="form-hint" role="alert">{hint}</div>}
       <div className="btn-row">
-        <button className="btn" onClick={handleSave}>Salvar</button>
+        <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
         <button className="btn ghost" onClick={onCancel}>Cancelar</button>
       </div>
     </div>
@@ -109,12 +122,13 @@ function quickSteps(h) {
 }
 
 function ProgressPanel({ habit, onClose }) {
-  const { addHabitProgress } = useAppData();
+  const { addHabitProgress, showToast } = useAppData();
   const [custom, setCustom] = useState('');
   const [busy, setBusy] = useState(false);
 
   async function add(amount, evt) {
-    if (busy || !amount) return;
+    if (busy || !amount || isNaN(amount)) return;
+    if (Math.abs(amount) > LIMITS.habitTarget) { showToast(maxMsg('Valor', LIMITS.habitTarget)); return; }
     setBusy(true);
     const rect = evt?.currentTarget?.getBoundingClientRect();
     const reached = await addHabitProgress(habit.id, amount);
@@ -129,7 +143,7 @@ function ProgressPanel({ habit, onClose }) {
         <button key={s} disabled={busy} onClick={e => add(s, e)}>+{formatAmount(s, habit.unit)}</button>
       ))}
       <div className="progress-custom">
-        <input type="number" inputMode="decimal" placeholder="Outro valor" value={custom} onChange={e => setCustom(e.target.value)} />
+        <input type="number" inputMode="decimal" placeholder="Outro valor" max={LIMITS.habitTarget} value={custom} onChange={e => setCustom(e.target.value)} />
         <button disabled={busy} onClick={e => add(parseFloat(String(custom).replace(',', '.')), e)}>Somar</button>
         <button disabled={busy || !habit.progress_today} onClick={e => add(-Number(habit.progress_today), e)}>Zerar</button>
       </div>

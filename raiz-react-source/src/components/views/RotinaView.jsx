@@ -6,6 +6,7 @@ import { CATEGORIES, DAY_LETTERS, categorizeTask, todayKey, dateToKey } from '..
 import { loadRecurring, materializeRecurring, describeRecurrence } from '../../lib/recurring';
 import { CheckIcon, FlagIcon, PencilIcon, TrashIcon, CalendarIcon, ListIcon, MoreIcon } from '../ui/Icons';
 import { burstConfetti, playSuccessSound } from '../../lib/effects';
+import { timeToMin } from '../../lib/validate';
 
 function formatDateLabel(dateKey) {
   const d = new Date(dateKey + 'T12:00:00');
@@ -29,33 +30,45 @@ function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
   const [priority, setPriority] = useState(editing?.priority || 'none');
   const [flagged, setFlagged] = useState(editing?.flagged || false);
 
+  const [saving, setSaving] = useState(false);
+  const [tried, setTried] = useState(false);
+  const sMin = timeToMin(start), eMin = timeToMin(end);
+  const over = hasDate && sMin !== null && eMin !== null && eMin <= sMin ? 'O fim precisa ser depois do início.' : '';
+  const missing = !title.trim() ? 'Dê um título à tarefa.'
+    : hasDate && !date ? 'Escolha a data.'
+    : !editing && hasDate && repeat === 'weekly' && !repeatDays.length ? 'Marque pelo menos um dia da semana.'
+    : '';
+  const hint = over || (tried ? missing : '');
+
   async function handleSave() {
-    if (!title.trim()) return;
+    if (saving) return;
+    if (over || missing) { setTried(true); return; }
+    setSaving(true);
     const finalDate = hasDate ? date : null;
-    if (!editing && hasDate && repeat !== 'none') {
-      if (repeat === 'weekly' && !repeatDays.length) return;
-      const d = new Date(date + 'T12:00:00');
-      const { data: rule } = await sb.from('recurring_tasks').insert({
-        user_id: user.id, title: title.trim(), notes: notes.trim() || null, category, priority,
-        start_time: start, end_time: end, rule: repeat,
-        days_of_week: repeat === 'weekly' ? repeatDays : null,
-        day_of_month: repeat === 'monthly' ? d.getDate() : null,
-        start_date: date,
-      }).select().single();
-      if (rule) await materializeRecurring(user.id, date < todayKey() ? todayKey() : date, [rule]);
-      onSaved(finalDate);
-      return;
-    }
-    await saveTask(editing?.id || null, {
-      title: title.trim(),
-      notes: notes.trim() || null,
-      date_key: finalDate,
-      start_time: hasDate ? start : '',
-      end_time: hasDate ? end : '',
-      category,
-      priority,
-      flagged,
-    });
+    try {
+      if (!editing && hasDate && repeat !== 'none') {
+        const d = new Date(date + 'T12:00:00');
+        const { data: rule } = await sb.from('recurring_tasks').insert({
+          user_id: user.id, title: title.trim(), notes: notes.trim() || null, category, priority,
+          start_time: start, end_time: end, rule: repeat,
+          days_of_week: repeat === 'weekly' ? repeatDays : null,
+          day_of_month: repeat === 'monthly' ? d.getDate() : null,
+          start_date: date,
+        }).select().single();
+        if (rule) await materializeRecurring(user.id, date < todayKey() ? todayKey() : date, [rule]);
+      } else {
+        await saveTask(editing?.id || null, {
+          title: title.trim(),
+          notes: notes.trim() || null,
+          date_key: finalDate,
+          start_time: hasDate ? start : '',
+          end_time: hasDate ? end : '',
+          category,
+          priority,
+          flagged,
+        });
+      }
+    } finally { setSaving(false); }
     onSaved(finalDate);
   }
 
@@ -105,8 +118,9 @@ function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
         <input type="checkbox" checked={flagged} onChange={e => setFlagged(e.target.checked)} />
         <span>Fixar esta tarefa</span>
       </label>
+      {hint && <div className="form-hint" role="alert">{hint}</div>}
       <div className="btn-row">
-        <button className="btn" onClick={handleSave}>Salvar</button>
+        <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
         <button className="btn ghost" onClick={onCancel}>Cancelar</button>
       </div>
     </div>
@@ -116,11 +130,15 @@ function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
 function SubtaskPanel({ task, subs, onChanged }) {
   const { user } = useAppData();
   const [newTitle, setNewTitle] = useState('');
+  const [adding, setAdding] = useState(false);
 
   async function handleAdd() {
-    if (!newTitle.trim()) return;
-    await sb.from('subtasks').insert({ user_id: user.id, task_id: task.id, title: newTitle.trim(), done: false });
-    setNewTitle('');
+    if (!newTitle.trim() || adding) return;
+    setAdding(true);
+    try {
+      await sb.from('subtasks').insert({ user_id: user.id, task_id: task.id, title: newTitle.trim(), done: false });
+      setNewTitle('');
+    } finally { setAdding(false); }
     onChanged();
   }
   async function toggle(s) {
@@ -146,7 +164,7 @@ function SubtaskPanel({ task, subs, onChanged }) {
           <input type="text" placeholder="+ Adicionar subtarefa" value={newTitle}
             onChange={e => setNewTitle(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()} />
-          <button type="button" className="subtask-save-btn" onClick={handleAdd}>Salvar</button>
+          <button type="button" className="subtask-save-btn" onClick={handleAdd} disabled={adding}>{adding ? 'Salvando…' : 'Salvar'}</button>
         </div>
       </div>
     </div>

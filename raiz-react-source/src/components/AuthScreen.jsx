@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { sb } from '../lib/supabaseClient';
 import { EyeIcon, EyeOffIcon, LogoMark } from './ui/Icons';
+import { authErrorPt } from '../lib/authErrors';
 
 function PasswordInput({ value, onChange, placeholder, autoComplete, name }) {
   const [show, setShow] = useState(false);
@@ -28,35 +29,45 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [errorColor, setErrorColor] = useState('');
+  const [busy, setBusy] = useState(false);
 
   async function handleSubmit(e) {
     e?.preventDefault();
+    if (busy) return;
     setError(''); setErrorColor('');
 
     if (mode === 'forgot') {
       if (!email) { setError('Digite seu e-mail.'); return; }
-      const { error } = await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin,
-      });
-      if (error) { setError(error.message); return; }
-      setErrorColor('var(--accent)');
-      setError('Link enviado! Verifique seu e-mail para redefinir a senha.');
+      setBusy(true);
+      try {
+        const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+        if (error) { setError(authErrorPt(error)); return; }
+        setErrorColor('var(--accent)');
+        setError('Link enviado! Verifique seu e-mail para redefinir a senha.');
+      } catch (err) { setError(authErrorPt(err)); } finally { setBusy(false); }
       return;
     }
 
     if (!email || !password) { setError('Preencha e-mail e senha.'); return; }
-    if (mode === 'signup') {
-      const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
-      if (error) { setError(error.message); return; }
-      if (data.user && !data.session) {
-        setErrorColor('var(--accent)');
-        setError('Conta criada! Verifique seu e-mail para confirmar antes de entrar.');
+    if (mode === 'signup' && password.length < 6) { setError('A senha precisa ter pelo menos 6 caracteres.'); return; }
+    setBusy(true);
+    try {
+      if (mode === 'signup') {
+        const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
+        if (error) { setError(authErrorPt(error)); return; }
+        if (data.user && !data.session) {
+          setErrorColor('var(--accent)');
+          setError('Conta criada! Verifique seu e-mail para confirmar antes de entrar.');
+        }
+      } else {
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) setError(authErrorPt(error));
       }
-    } else {
-      const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) setError(error.message);
-    }
+    } catch (err) { setError(authErrorPt(err)); } finally { setBusy(false); }
   }
+
+  // B4: some o aviso antigo quando a pessoa volta a digitar
+  function clearError() { if (error && !errorColor) setError(''); }
 
   const titles = {
     login: 'Entre para acessar sua evolução pessoal.',
@@ -64,6 +75,7 @@ export default function AuthScreen() {
     forgot: 'Digite seu e-mail para receber o link de redefinição.',
   };
   const buttonLabels = { login: 'Entrar', signup: 'Criar conta', forgot: 'Enviar link' };
+  const busyLabels = { login: 'Entrando…', signup: 'Criando conta…', forgot: 'Enviando…' };
 
   return (
     <div className="auth-screen" id="authScreen">
@@ -72,17 +84,17 @@ export default function AuthScreen() {
       <div className="auth-sub">{titles[mode]}</div>
       {/* Formulário de verdade: o iPhone (Chaves do iCloud) e o navegador oferecem salvar e preencher e-mail e senha */}
       <form onSubmit={handleSubmit} method="post" action="#" style={{ width: '100%' }}>
-      <input type="email" name="email" id="email" placeholder="E-mail" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} inputMode="email" value={email} onChange={e => setEmail(e.target.value)} />
+      <input type="email" name="email" id="email" placeholder="E-mail" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} inputMode="email" value={email} onChange={e => { setEmail(e.target.value); clearError(); }} />
       {mode !== 'forgot' && (
         <PasswordInput
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={e => { setPassword(e.target.value); clearError(); }}
           placeholder="Senha"
           name={mode === 'signup' ? 'new-password' : 'password'}
           autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
         />
       )}
-      <button className="btn" type="submit">{buttonLabels[mode]}</button>
+      <button className="btn" type="submit" disabled={busy}>{busy ? busyLabels[mode] : buttonLabels[mode]}</button>
       </form>
       <div className="auth-error" style={{ color: errorColor || undefined }}>{error}</div>
 

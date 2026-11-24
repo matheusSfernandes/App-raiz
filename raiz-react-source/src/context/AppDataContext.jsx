@@ -174,7 +174,7 @@ export function AppDataProvider({ user, children }) {
     if (!h || !isNumeric(h)) return false;
     const { data: row } = await sb.from('habit_progress').select('value').eq('habit_id', id).eq('date_key', dateKey).maybeSingle();
     const before = Number(row?.value || 0);
-    const value = Math.max(0, before + Number(amount));
+    const value = Math.min(1000000, Math.max(0, before + Number(amount)));
     await sb.from('habit_progress').upsert({ user_id: user.id, habit_id: id, date_key: dateKey, value, updated_at: new Date().toISOString() }, { onConflict: 'habit_id,date_key' });
     const target = Number(h.target);
     const wasDone = before >= target, isDone = value >= target;
