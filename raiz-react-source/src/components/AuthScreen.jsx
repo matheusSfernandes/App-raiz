@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { sb } from '../lib/supabaseClient';
 import { EyeIcon, EyeOffIcon, LogoMark } from './ui/Icons';
 import { authErrorPt } from '../lib/authErrors';
+import { getRemember, setRemember, forgetEmail } from '../lib/remember';
 
-function PasswordInput({ value, onChange, placeholder, autoComplete, name }) {
+function PasswordInput({ value, onChange, placeholder, autoComplete, name, autoFocus }) {
   const [show, setShow] = useState(false);
   return (
     <div className="password-field">
@@ -13,6 +14,7 @@ function PasswordInput({ value, onChange, placeholder, autoComplete, name }) {
         id={name}
         placeholder={placeholder}
         autoComplete={autoComplete}
+        autoFocus={autoFocus}
         value={value}
         onChange={onChange}
       />
@@ -25,7 +27,9 @@ function PasswordInput({ value, onChange, placeholder, autoComplete, name }) {
 
 export default function AuthScreen() {
   const [mode, setMode] = useState('login'); // 'login' | 'signup' | 'forgot'
-  const [email, setEmail] = useState('');
+  const saved = getRemember();
+  const [email, setEmail] = useState(saved.email || '');
+  const [remember, setRememberOn] = useState(saved.on);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [errorColor, setErrorColor] = useState('');
@@ -55,6 +59,7 @@ export default function AuthScreen() {
       if (mode === 'signup') {
         const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
         if (error) { setError(authErrorPt(error)); return; }
+        if (data.session) setRemember(true, email.trim());
         if (data.user && !data.session) {
           setErrorColor('var(--accent)');
           setError('Conta criada! Verifique seu e-mail para confirmar antes de entrar.');
@@ -62,6 +67,7 @@ export default function AuthScreen() {
       } else {
         const { error } = await sb.auth.signInWithPassword({ email, password });
         if (error) setError(authErrorPt(error));
+        else setRemember(remember, email.trim());
       }
     } catch (err) { setError(authErrorPt(err)); } finally { setBusy(false); }
   }
@@ -85,6 +91,11 @@ export default function AuthScreen() {
       {/* Formulário de verdade: o iPhone (Chaves do iCloud) e o navegador oferecem salvar e preencher e-mail e senha */}
       <form onSubmit={handleSubmit} method="post" action="#" style={{ width: '100%' }}>
       <input type="email" name="email" id="email" placeholder="E-mail" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} inputMode="email" value={email} onChange={e => { setEmail(e.target.value); clearError(); }} />
+      {mode === 'login' && saved.email && email === saved.email && (
+        <div className="auth-remembered">
+          <a onClick={() => { forgetEmail(); setEmail(''); }}>Usar outro e-mail</a>
+        </div>
+      )}
       {mode !== 'forgot' && (
         <PasswordInput
           value={password}
@@ -92,7 +103,14 @@ export default function AuthScreen() {
           placeholder="Senha"
           name={mode === 'signup' ? 'new-password' : 'password'}
           autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+          autoFocus={mode === 'login' && !!saved.email}
         />
+      )}
+      {mode === 'login' && (
+        <label className="flag-check auth-remember">
+          <input type="checkbox" checked={remember} onChange={e => setRememberOn(e.target.checked)} />
+          <span>Lembrar de mim<small>Continua conectado e guarda o e-mail neste aparelho</small></span>
+        </label>
       )}
       <button className="btn" type="submit" disabled={busy}>{busy ? busyLabels[mode] : buttonLabels[mode]}</button>
       </form>

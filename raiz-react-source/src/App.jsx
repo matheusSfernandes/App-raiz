@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { sb, storedSession } from './lib/supabaseClient';
 import { clearOfflineData } from './lib/offline';
+import { sessionShouldEnd } from './lib/remember';
 import OfflineBar from './components/OfflineBar';
 import AuthScreen from './components/AuthScreen';
 import ResetPasswordScreen from './components/ResetPasswordScreen';
@@ -122,7 +123,12 @@ export default function App() {
 
   useEffect(() => {
     const offlineFallback = () => (!navigator.onLine ? storedSession() : null);
-    sb.auth.getSession().then(({ data, error }) => setSession(data.session || (error ? storedSession() : offlineFallback())));
+    (async () => {
+      // "Lembrar de mim" desmarcado e o app foi fechado: encerra a sessão neste aparelho
+      if (sessionShouldEnd() && storedSession()) await sb.auth.signOut({ scope: 'local' }).catch(() => {});
+      const { data, error } = await sb.auth.getSession();
+      setSession(data.session || (error ? storedSession() : offlineFallback()));
+    })();
     const { data: listener } = sb.auth.onAuthStateChange((event, s) => {
       if (event === 'SIGNED_OUT') clearOfflineData();
       if (!s && event === 'INITIAL_SESSION') { const f = storedSession(); if (f && !navigator.onLine) { setSession(f); return; } }

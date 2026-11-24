@@ -905,3 +905,11 @@ button { font-family: inherit; }
   .seg-btn { min-height: 44px; }
   .logout-btn { min-height: 44px; padding: 10px 16px; }
 }
+
+/* Login: Lembrar de mim (24/11) */
+.auth-remember { margin: 2px 0 14px; align-items: flex-start; text-align: left; }
+.auth-screen .auth-remember input { width: 18px; height: 18px; flex: 0 0 auto; margin: 1px 0 0; padding: 0; accent-color: var(--accent); box-shadow: none; }
+.auth-remember small { display: block; font-size: 12px; color: var(--ink-faint); margin-top: 1px; }
+.auth-remembered { text-align: right; margin: -4px 0 8px; font-size: 12.5px; }
+.auth-remembered a { color: var(--accent); font-weight: 600; cursor: pointer; }
+@media (pointer: coarse) { .auth-remember { min-height: 44px; } }
