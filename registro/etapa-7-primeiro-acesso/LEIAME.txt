@@ -29,3 +29,4 @@ Conferido no app publicado em 24/11/2026 (conta de teste, computador):
 - Guia com 3 de 4 passos feitos (depois-inicio-guia-primeiro-acesso.jpg); salvar o nome completou o guia e a saudação virou "Bom dia, Teste" (depois-inicio-guia-concluido.jpg)
 - "Pular guia" escondeu o cartão e gravou onboarding_done = true no banco
 - O nome da conta de teste voltou a ficar vazio depois do teste
+- Matheus testou no celular em 24/11/2026 e deu certo.
