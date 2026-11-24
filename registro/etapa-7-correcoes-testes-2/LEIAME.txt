@@ -20,7 +20,7 @@ Conferido no app publicado em 24/11/2026 (conta de teste, tela de 390 px):
 - Tabela dos 6 meses: 315 px visíveis de 444 px, rolando dentro do cartão; nada passa da largura da tela
 - Hábitos: sem lixeira na linha; "Apagar hábito" no formulário de edição (depois-habito-apagar-no-formulario.jpg)
 - Recarregar em Finanças manteve Finanças; Finanças, Rotina e Voltar retornou a Finanças
-- As áreas de toque de 44 px valem só em tela de toque; conferir no celular.
+- Matheus testou M3, M4 e M5 no celular em 24/11/2026 e deu certo.
 
 Login: Lembrar de mim (pedido de Matheus em 24/11/2026)
 Antes: ao tocar em Sair, a tela de login voltava vazia; não havia opção de continuar conectado.
