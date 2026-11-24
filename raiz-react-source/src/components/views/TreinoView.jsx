@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
 import { todayKey, formatKeyBR } from '../../lib/helpers';
@@ -32,6 +32,7 @@ function PlanForm({ editing, onCancel, onSaved }) {
       : [{ name: '', sets: 3, reps: 10 }]
   );
   const [saving, setSaving] = useState(false);
+  const lock = useRef(false); // trava imediata contra cliques no mesmo instante
 
   function setRow(i, key, value) {
     setRows(r => r.map((row, idx) => (idx === i ? { ...row, [key]: value } : row)));
@@ -45,8 +46,9 @@ function PlanForm({ editing, onCancel, onSaved }) {
   const hint = over || (tried ? missing : '');
 
   async function handleSave() {
-    if (saving) return;
+    if (lock.current) return;
     if (over || missing) { setTried(true); return; }
+    lock.current = true;
     setSaving(true);
     let planId = editing?.id;
     if (planId) {
@@ -64,6 +66,7 @@ function PlanForm({ editing, onCancel, onSaved }) {
         position: i,
       })));
     }
+    lock.current = false;
     setSaving(false);
     onSaved();
   }
@@ -126,6 +129,7 @@ function PlansTab({ plans, onChanged, onStart }) {
 function TrainTab({ plans, draft, setDraft, lastByExercise, onFinished, goToPlans }) {
   const { user, showToast } = useAppData();
   const [saving, setSaving] = useState(false);
+  const lock = useRef(false); // trava imediata contra cliques no mesmo instante
 
   if (!draft) {
     return plans.length === 0 ? (
@@ -178,15 +182,16 @@ function TrainTab({ plans, draft, setDraft, lastByExercise, onFinished, goToPlan
 
   async function finish() {
     if (!doneSets) { showToast('Marque pelo menos uma série feita.'); return; }
-    if (saving) return;
+    if (lock.current) return;
     const doneList = draft.exercises.flatMap(ex => ex.sets.filter(s => s.done));
     if (doneList.some(s => toNum(s.reps) > LIMITS.reps)) { showToast(maxMsg('Repetições', LIMITS.reps)); return; }
     if (doneList.some(s => toNum(s.weight) > LIMITS.weight)) { showToast(maxMsg('Carga', LIMITS.weight, ' kg')); return; }
+    lock.current = true;
     setSaving(true);
     const { data: session, error } = await sb.from('workout_sessions').insert({
       user_id: user.id, plan_id: draft.planId, plan_name: draft.planName, date_key: todayKey(),
     }).select().single();
-    if (error || !session) { setSaving(false); showToast('Não deu para salvar. Tente de novo.'); return; }
+    if (error || !session) { lock.current = false; setSaving(false); showToast('Não deu para salvar. Tente de novo.'); return; }
     const rows = [];
     draft.exercises.forEach(ex => {
       let n = 0;
@@ -201,6 +206,7 @@ function TrainTab({ plans, draft, setDraft, lastByExercise, onFinished, goToPlan
       });
     });
     await sb.from('workout_sets').insert(rows);
+    lock.current = false;
     setSaving(false);
     playSuccessSound();
     showToast(`Treino salvo: ${rows.length} série${rows.length === 1 ? '' : 's'}.`);

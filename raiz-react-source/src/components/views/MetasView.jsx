@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
 import { CATEGORIES, AREA_COLORS } from '../../lib/helpers';
@@ -15,9 +15,11 @@ function GoalForm({ editing, onCancel, onSaved }) {
   const [date, setDate] = useState(editing?.target_date || '');
   const [stepsText, setStepsText] = useState('');
   const [saving, setSaving] = useState(false);
+  const lock = useRef(false);
 
   async function save() {
-    if (!title.trim() || saving) return;
+    if (!title.trim() || lock.current) return;
+    lock.current = true;
     setSaving(true);
     const fields = { title: title.trim(), notes: notes.trim() || null, category, target_date: hasDate && date ? date : null };
     if (editing) {
@@ -29,6 +31,7 @@ function GoalForm({ editing, onCancel, onSaved }) {
         await sb.from('goal_steps').insert(steps.map((t, i) => ({ goal_id: g.id, user_id: user.id, title: t, sort: i })));
       }
     }
+    lock.current = false;
     setSaving(false);
     onSaved();
   }
@@ -54,7 +57,7 @@ function GoalForm({ editing, onCancel, onSaved }) {
       )}
       <div className="btn-row">
         <button className="btn ghost" onClick={onCancel}>Cancelar</button>
-        <button className="btn" onClick={save} disabled={!title.trim() || saving}>{editing ? 'Salvar' : 'Criar meta'}</button>
+        <button className="btn" onClick={save} disabled={!title.trim() || saving}>{saving ? 'Salvando…' : editing ? 'Salvar' : 'Criar meta'}</button>
       </div>
     </div>
   );

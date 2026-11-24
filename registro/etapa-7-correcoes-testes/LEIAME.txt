@@ -3,7 +3,7 @@ Relatório de origem: registro/testes-2026-11-24/RELATORIO.md (prints do antes: 
 
 A1. Clique repetido em Salvar
 Antes: Hábitos, Rotina (tarefa e subtarefa) e Finanças (movimentação e conta fixa) gravavam uma vez por clique; 3 cliques = 3 registros.
-Depois: o botão trava e mostra "Salvando…" até a gravação terminar, como já era em Metas e Treino.
+Depois: o botão trava e mostra "Salvando…" até a gravação terminar. Além do estado "saving", há uma trava imediata (useRef), porque 3 cliques no mesmo instante ainda passavam só com o estado; a trava foi aplicada também em Metas e Treino.
 
 A2. Formulário inválido
 Antes: nada acontecia e a pessoa não sabia o que faltava.

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import { todayKey, formatKeyBR } from '../../lib/helpers';
 import {
@@ -19,6 +19,7 @@ function TxForm({ tx, defaultDate, onCancel }) {
   const [date, setDate] = useState(tx?.date_key || defaultDate || todayKey());
 
   const [saving, setSaving] = useState(false);
+  const lock = useRef(false); // trava imediata: cliques no mesmo instante não passam
   const [tried, setTried] = useState(false);
   const amt = toNum(amount);
   const over = amt > LIMITS.money ? moneyProblem(amount) : '';
@@ -26,13 +27,14 @@ function TxForm({ tx, defaultDate, onCancel }) {
   const hint = over || (tried ? missing : '');
 
   async function handleSave() {
-    if (saving) return;
+    if (lock.current) return;
     if (over || missing) { setTried(true); return; }
+    lock.current = true;
     setSaving(true);
     const fields = { description: desc.trim(), amount: Math.round(amt * 100) / 100, type, category: category || null, date_key: date || todayKey() };
     try {
       if (tx) await updateTx(tx.id, fields); else await addTx(fields);
-    } finally { setSaving(false); }
+    } finally { lock.current = false; setSaving(false); }
     onCancel();
   }
 
@@ -71,6 +73,7 @@ function BillForm({ bill, onCancel }) {
   const [day, setDay] = useState(bill ? String(bill.day_of_month) : '');
 
   const [saving, setSaving] = useState(false);
+  const lock = useRef(false); // trava imediata: cliques no mesmo instante não passam
   const [tried, setTried] = useState(false);
   const amt = toNum(amount);
   const d = parseInt(day, 10);
@@ -80,12 +83,13 @@ function BillForm({ bill, onCancel }) {
   const hint = over || (tried ? missing : '');
 
   async function handleSave() {
-    if (saving) return;
+    if (lock.current) return;
     if (over || missing) { setTried(true); return; }
+    lock.current = true;
     setSaving(true);
     try {
       await saveFixedBill(bill?.id, { description: desc.trim(), amount: Math.round(amt * 100) / 100, type, category: category || null, day_of_month: d });
-    } finally { setSaving(false); }
+    } finally { lock.current = false; setSaving(false); }
     onCancel();
   }
 

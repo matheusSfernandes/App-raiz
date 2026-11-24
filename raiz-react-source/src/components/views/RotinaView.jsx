@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import TimeInput from '../ui/TimeInput';
 import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
@@ -31,6 +31,7 @@ function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
   const [flagged, setFlagged] = useState(editing?.flagged || false);
 
   const [saving, setSaving] = useState(false);
+  const lock = useRef(false); // trava imediata: cliques no mesmo instante não passam
   const [tried, setTried] = useState(false);
   const sMin = timeToMin(start), eMin = timeToMin(end);
   const over = hasDate && sMin !== null && eMin !== null && eMin <= sMin ? 'O fim precisa ser depois do início.' : '';
@@ -41,8 +42,9 @@ function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
   const hint = over || (tried ? missing : '');
 
   async function handleSave() {
-    if (saving) return;
+    if (lock.current) return;
     if (over || missing) { setTried(true); return; }
+    lock.current = true;
     setSaving(true);
     const finalDate = hasDate ? date : null;
     try {
@@ -68,7 +70,7 @@ function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
           flagged,
         });
       }
-    } finally { setSaving(false); }
+    } finally { lock.current = false; setSaving(false); }
     onSaved(finalDate);
   }
 
@@ -131,14 +133,16 @@ function SubtaskPanel({ task, subs, onChanged }) {
   const { user } = useAppData();
   const [newTitle, setNewTitle] = useState('');
   const [adding, setAdding] = useState(false);
+  const addLock = useRef(false);
 
   async function handleAdd() {
-    if (!newTitle.trim() || adding) return;
+    if (!newTitle.trim() || addLock.current) return;
+    addLock.current = true;
     setAdding(true);
     try {
       await sb.from('subtasks').insert({ user_id: user.id, task_id: task.id, title: newTitle.trim(), done: false });
       setNewTitle('');
-    } finally { setAdding(false); }
+    } finally { addLock.current = false; setAdding(false); }
     onChanged();
   }
   async function toggle(s) {

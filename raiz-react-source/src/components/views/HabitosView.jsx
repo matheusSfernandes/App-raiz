@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import TimeInput from '../ui/TimeInput';
 import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
@@ -27,6 +27,7 @@ function HabitForm({ editing, onCancel }) {
   }
 
   const [saving, setSaving] = useState(false);
+  const lock = useRef(false); // trava imediata: cliques no mesmo instante não passam
   const [tried, setTried] = useState(false);
   const t = toNum(target);
   const over = kind === 'amount' && t > LIMITS.habitTarget ? maxMsg('Meta', LIMITS.habitTarget) : '';
@@ -37,8 +38,9 @@ function HabitForm({ editing, onCancel }) {
   const hint = over || (tried ? missing : '');
 
   async function handleSave() {
-    if (saving) return;
+    if (lock.current) return;
     if (over || missing) { setTried(true); return; }
+    lock.current = true;
     setSaving(true);
     try {
       await saveHabit(editing?.id || null, {
@@ -48,7 +50,7 @@ function HabitForm({ editing, onCancel }) {
         target: kind === 'amount' ? t : null,
         unit: kind === 'amount' ? (unit.trim() || null) : null,
       });
-    } finally { setSaving(false); }
+    } finally { lock.current = false; setSaving(false); }
     onCancel();
   }
 
