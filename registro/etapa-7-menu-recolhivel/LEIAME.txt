@@ -1,0 +1,4 @@
+Etapa 7, menu fixo e recolhível no computador (pedido de Matheus em 24/11/2026)
+Antes: no computador o menu abria por cima do conteúdo, com fundo escuro; para usar a tela era preciso fechar o menu (antes-menu-cobria-a-tela.png).
+Depois: em telas de 900 px ou mais o menu fica fixo ao lado do conteúdo. O botão ao lado do logo recolhe para só os ícones (o nome aparece ao passar o mouse) e abre de novo. A escolha fica guardada no aparelho. No celular continua o menu deslizante com o botão de três linhas.
+Prints enviados por Matheus: depois-menu-aberto.png e depois-menu-recolhido.png. Testado por ele no computador em 24/11/2026: deu certo.
