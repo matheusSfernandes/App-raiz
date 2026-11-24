@@ -24,7 +24,10 @@ async function recomputeHabitRow(habit, freezeLog) {
   if (streak !== habit.streak || lastDone !== habit.last_done) {
     await sb.from('habits').update({ streak, last_done: lastDone }).eq('id', habit.id);
   }
-  return { ...habit, streak, last_done: lastDone };
+  // aproveita a mesma leitura para a contagem da semana (sem nova consulta)
+  const weekStart = weekStartKey(today);
+  const week_count = (logs || []).filter(l => l.date_key >= weekStart && l.date_key <= today).length;
+  return { ...habit, streak, last_done: lastDone, week_count };
 }
 
 export function useAppData() {
@@ -82,25 +85,16 @@ export function AppDataProvider({ user, children }) {
     return updated;
   }, [user, showToast]);
 
-  const refreshAll = useCallback(async () => {
-    await materializeRecurring(user.id, todayKey());
-    const [{ data: profileRows }, { data: habitsData }, { data: tasksData }, { data: txData }, { data: billsData }] = await Promise.all([
-      sb.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-      sb.from('habits').select('*').eq('user_id', user.id).order('created_at'),
-      sb.from('tasks').select('*').eq('user_id', user.id).eq('date_key', todayKey()).order('start_time'),
-      sb.from('transactions').select('*').eq('user_id', user.id).order('date_key', { ascending: false }).order('created_at', { ascending: false }),
-      sb.from('fixed_bills').select('*').eq('user_id', user.id).order('day_of_month'),
-    ]);
+  // B6: cada gravação recarrega só a parte que mudou. As consultas abaixo são as mesmas
+  // de antes (mesmo endereço), então o modo sem internet continua lendo da cópia guardada.
+  const dayRef = useRef(null);       // dia carregado: se virou o dia, recarrega tudo
+  const profileRef = useRef({});
+  useEffect(() => { profileRef.current = profile; }, [profile]);
 
-    let prof = profileRows;
-    if (!prof && isOnline()) {
-      await sb.from('profiles').insert({ id: user.id, name: '', goal: '', quote: '' });
-      prof = { name: '', goal: '', quote: '' };
-    }
-    if (!prof) prof = { name: '', goal: '', quote: '' };
-
-    let subs = {};
+  const queryTasks = useCallback(async () => {
+    const { data: tasksData } = await sb.from('tasks').select('*').eq('user_id', user.id).eq('date_key', todayKey()).order('start_time');
     const taskList = tasksData || [];
+    const subs = {};
     if (taskList.length) {
       const { data: subData } = await sb.from('subtasks').select('*').eq('user_id', user.id).in('task_id', taskList.map(t => t.id)).order('created_at');
       (subData || []).forEach(s => {
@@ -108,10 +102,12 @@ export function AppDataProvider({ user, children }) {
         subs[s.task_id].push(s);
       });
     }
+    return { taskList, subs };
+  }, [user]);
 
-    let fixedHabits = isOnline() ? await checkStreakBreaks(habitsData || [], prof) : (habitsData || []);
-    // Flexíveis: a sequência é em semanas, então recalcula ao abrir (vira a semana)
-    fixedHabits = await Promise.all(fixedHabits.map(h => (isFlexible(h) ? recomputeHabitRow(h, prof.freeze_log) : h)));
+  // Junta sequência semanal (flexíveis), contagem da semana e progresso do dia
+  const decorateHabits = useCallback(async (list, prof) => {
+    let out = await Promise.all(list.map(h => (isFlexible(h) ? recomputeHabitRow(h, prof.freeze_log) : h)));
     const today = todayKey();
     const [{ data: weekLogs }, { data: progressRows }] = await Promise.all([
       sb.from('habit_logs').select('habit_id').eq('user_id', user.id).gte('date_key', weekStartKey(today)).lte('date_key', today),
@@ -121,8 +117,31 @@ export function AppDataProvider({ user, children }) {
     (weekLogs || []).forEach(l => { weekCount[l.habit_id] = (weekCount[l.habit_id] || 0) + 1; });
     const progress = {};
     (progressRows || []).forEach(p => { progress[p.habit_id] = Number(p.value); });
-    fixedHabits = fixedHabits.map(h => ({ ...h, week_count: weekCount[h.id] || 0, progress_today: progress[h.id] || 0 }));
+    return out.map(h => ({ ...h, week_count: weekCount[h.id] || 0, progress_today: progress[h.id] || 0 }));
+  }, [user]);
 
+  const refreshAll = useCallback(async () => {
+    dayRef.current = todayKey();
+    await materializeRecurring(user.id, todayKey());
+    const [{ data: profileRows }, { data: habitsData }, { data: txData }, { data: billsData }, { taskList, subs }] = await Promise.all([
+      sb.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+      sb.from('habits').select('*').eq('user_id', user.id).order('created_at'),
+      sb.from('transactions').select('*').eq('user_id', user.id).order('date_key', { ascending: false }).order('created_at', { ascending: false }),
+      sb.from('fixed_bills').select('*').eq('user_id', user.id).order('day_of_month'),
+      queryTasks(),
+    ]);
+
+    let prof = profileRows;
+    if (!prof && isOnline()) {
+      await sb.from('profiles').insert({ id: user.id, name: '', goal: '', quote: '' });
+      prof = { name: '', goal: '', quote: '' };
+    }
+    if (!prof) prof = { name: '', goal: '', quote: '' };
+
+    const checked = isOnline() ? await checkStreakBreaks(habitsData || [], prof) : (habitsData || []);
+    const fixedHabits = await decorateHabits(checked, prof);
+
+    profileRef.current = prof;
     setProfile(prof);
     setHabits(fixedHabits);
     setTasks(taskList);
@@ -130,7 +149,33 @@ export function AppDataProvider({ user, children }) {
     setFixedBills(billsData || []);
     setSubtasksByTask(subs);
     setLoading(false);
-  }, [user, checkStreakBreaks]);
+  }, [user, checkStreakBreaks, queryTasks, decorateHabits]);
+
+  // Recarregadores de uma parte só
+  const refreshTasks = useCallback(async () => {
+    const { taskList, subs } = await queryTasks();
+    setTasks(taskList);
+    setSubtasksByTask(subs);
+  }, [queryTasks]);
+  const refreshHabits = useCallback(async () => {
+    const { data: habitsData } = await sb.from('habits').select('*').eq('user_id', user.id).order('created_at');
+    setHabits(await decorateHabits(habitsData || [], profileRef.current));
+  }, [user, decorateHabits]);
+  const refreshTx = useCallback(async () => {
+    const { data } = await sb.from('transactions').select('*').eq('user_id', user.id).order('date_key', { ascending: false }).order('created_at', { ascending: false });
+    setTransactions(data || []);
+  }, [user]);
+  const refreshBills = useCallback(async () => {
+    const { data } = await sb.from('fixed_bills').select('*').eq('user_id', user.id).order('day_of_month');
+    setFixedBills(data || []);
+  }, [user]);
+
+  // Depois de gravar: se o dia virou com o app aberto, recarrega tudo (cria as recorrentes
+  // do novo dia e confere as sequências); senão roda só a atualização da parte mexida.
+  const after = async (partial) => {
+    if (dayRef.current !== todayKey()) return refreshAll();
+    if (partial) await partial();
+  };
 
   useEffect(() => { refreshAll(); }, [refreshAll]);
   // Depois de enviar as alterações feitas sem internet, recarrega do servidor
@@ -153,7 +198,7 @@ export function AppDataProvider({ user, children }) {
     } else {
       await sb.from('habits').insert({ user_id: user.id, streak: 0, last_done: null, ...fields });
     }
-    await refreshAll();
+    await after(refreshHabits);
   };
   const recomputeHabit = (habit) => recomputeHabitRow(habit, profile.freeze_log);
   const setHabitDone = async (id, dateKey, done) => {
@@ -164,8 +209,14 @@ export function AppDataProvider({ user, children }) {
     } else {
       await sb.from('habit_logs').delete().eq('habit_id', id).eq('date_key', dateKey);
     }
-    await recomputeHabit(h);
-    await refreshAll();
+    if (isOnline()) {
+      // a releitura do registro deste hábito já traz sequência, último dia e semana
+      const row = await recomputeHabit(h);
+      setHabits(list => list.map(x => (x.id === id ? { ...x, ...row, progress_today: x.progress_today } : x)));
+      await after();
+    } else {
+      await after(refreshHabits); // sem internet: mesmo caminho de antes, pela cópia guardada
+    }
     return done;
   };
   // Soma (ou tira) quantidade no progresso do dia; conclui ao bater a meta
@@ -176,10 +227,11 @@ export function AppDataProvider({ user, children }) {
     const before = Number(row?.value || 0);
     const value = Math.min(1000000, Math.max(0, before + Number(amount)));
     await sb.from('habit_progress').upsert({ user_id: user.id, habit_id: id, date_key: dateKey, value, updated_at: new Date().toISOString() }, { onConflict: 'habit_id,date_key' });
+    if (dateKey === todayKey()) setHabits(list => list.map(x => (x.id === id ? { ...x, progress_today: value } : x)));
     const target = Number(h.target);
     const wasDone = before >= target, isDone = value >= target;
     if (wasDone !== isDone) { await setHabitDone(id, dateKey, isDone); return isDone && !wasDone; }
-    await refreshAll();
+    await after();
     return false;
   };
   const toggleHabit = async (id) => {
@@ -188,7 +240,8 @@ export function AppDataProvider({ user, children }) {
   };
   const deleteHabit = async (id) => {
     await sb.from('habits').delete().eq('id', id);
-    await refreshAll();
+    setHabits(list => list.filter(x => x.id !== id));
+    await after();
   };
 
   // ---- Tasks ----
@@ -198,27 +251,36 @@ export function AppDataProvider({ user, children }) {
     } else {
       await sb.from('tasks').insert({ user_id: user.id, done: false, date_key: todayKey(), ...fields });
     }
-    await refreshAll();
+    await after(refreshTasks);
   };
   const toggleTask = async (task) => {
     const willBeDone = !task.done;
     await sb.from('tasks').update({ done: willBeDone }).eq('id', task.id);
-    await refreshAll();
+    setTasks(list => list.map(t => (t.id === task.id ? { ...t, done: willBeDone } : t)));
+    await after();
     return willBeDone;
   };
   const deleteTask = async (id) => {
     await sb.from('tasks').delete().eq('id', id);
-    await refreshAll();
+    setTasks(list => list.filter(t => t.id !== id));
+    setSubtasksByTask(m => { const n = { ...m }; delete n[id]; return n; });
+    await after();
   };
   const rescheduleTask = async (id, newDateKey) => {
     await sb.from('tasks').update({ date_key: newDateKey }).eq('id', id);
-    await refreshAll();
+    if (newDateKey === todayKey()) await after(refreshTasks); // entrou na lista de hoje
+    else { setTasks(list => list.filter(t => t.id !== id)); await after(); }
   };
 
   // ---- Subtasks ----
+  const patchSub = (id, fn) => setSubtasksByTask(m => {
+    const n = {};
+    for (const [k, arr] of Object.entries(m)) n[k] = fn(arr);
+    return n;
+  });
   const addSubtask = async (taskId, title) => {
     await sb.from('subtasks').insert({ user_id: user.id, task_id: taskId, title, done: false });
-    await refreshAll();
+    await after(refreshTasks);
   };
   const toggleSubtask = async (id) => {
     let found = null;
@@ -228,25 +290,29 @@ export function AppDataProvider({ user, children }) {
     }
     if (!found) return;
     await sb.from('subtasks').update({ done: !found.done }).eq('id', id);
-    await refreshAll();
+    patchSub(id, arr => arr.map(s => (s.id === id ? { ...s, done: !found.done } : s)));
+    await after();
   };
   const deleteSubtask = async (id) => {
     await sb.from('subtasks').delete().eq('id', id);
-    await refreshAll();
+    patchSub(id, arr => arr.filter(s => s.id !== id));
+    await after();
   };
 
   // ---- Transactions ----
   const addTx = async (fields) => {
     await sb.from('transactions').insert({ user_id: user.id, date_key: todayKey(), ...fields });
-    await refreshAll();
+    await after(refreshTx);
   };
   const updateTx = async (id, fields) => {
     await sb.from('transactions').update(fields).eq('id', id);
-    await refreshAll();
+    if ('date_key' in fields) await after(refreshTx); // muda a ordem da lista
+    else { setTransactions(list => list.map(t => (t.id === id ? { ...t, ...fields } : t))); await after(); }
   };
   const deleteTx = async (id) => {
     await sb.from('transactions').delete().eq('id', id);
-    await refreshAll();
+    setTransactions(list => list.filter(t => t.id !== id));
+    await after();
   };
 
   // ---- Contas fixas ----
@@ -256,11 +322,14 @@ export function AppDataProvider({ user, children }) {
     } else {
       await sb.from('fixed_bills').insert({ user_id: user.id, start_month: todayKey().slice(0, 7), ...fields });
     }
-    await refreshAll();
+    await after(refreshBills);
   };
   const deleteFixedBill = async (id) => {
     await sb.from('fixed_bills').delete().eq('id', id);
-    await refreshAll();
+    setFixedBills(list => list.filter(b => b.id !== id));
+    // no banco as movimentações dela perdem o vínculo (on delete set null)
+    setTransactions(list => list.map(t => (t.fixed_id === id ? { ...t, fixed_id: null } : t)));
+    await after();
   };
   // Marca como paga no mês: cria a movimentação ligada à conta
   const payFixedBill = async (bill, dateKey) => {
@@ -271,8 +340,8 @@ export function AppDataProvider({ user, children }) {
         user_id: user.id, fixed_id: bill.id, description: bill.description, amount: bill.amount,
         type: bill.type, category: bill.category, date_key: dateKey,
       });
-    }
-    await refreshAll();
+      await after(refreshTx);
+    } else await after();
   };
 
   // ---- Profile ----
@@ -283,7 +352,7 @@ export function AppDataProvider({ user, children }) {
 
   const value = {
     user, profile, habits, tasks, transactions, subtasksByTask, loading,
-    toasts, showToast, refreshAll,
+    toasts, showToast, refreshAll, refreshTasks,
     saveHabit, toggleHabit, setHabitDone, addHabitProgress, deleteHabit,
     saveTask, toggleTask, deleteTask, rescheduleTask,
     addSubtask, toggleSubtask, deleteSubtask,

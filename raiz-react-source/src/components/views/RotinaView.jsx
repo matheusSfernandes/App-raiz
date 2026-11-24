@@ -17,7 +17,7 @@ function formatDateLabel(dateKey) {
 }
 
 function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
-  const { saveTask, user } = useAppData();
+  const { saveTask, user, refreshTasks } = useAppData();
   const [repeat, setRepeat] = useState('none');
   const [repeatDays, setRepeatDays] = useState(() => [new Date((editing?.date_key || defaultDate || todayKey()) + 'T12:00:00').getDay()]);
   const [title, setTitle] = useState(editing?.title || '');
@@ -58,6 +58,7 @@ function TaskForm({ editing, defaultDate, noDateMode, onCancel, onSaved }) {
           start_date: date,
         }).select().single();
         if (rule) await materializeRecurring(user.id, date < todayKey() ? todayKey() : date, [rule]);
+        if (rule && date <= todayKey()) await refreshTasks(); // a de hoje aparece no Início
       } else {
         await saveTask(editing?.id || null, {
           title: title.trim(),
@@ -144,15 +145,15 @@ function SubtaskPanel({ task, subs, onChanged }) {
       await sb.from('subtasks').insert({ user_id: user.id, task_id: task.id, title: newTitle.trim(), done: false });
       setNewTitle('');
     } finally { addLock.current = false; setAdding(false); }
-    onChanged();
+    onChanged({ subsOf: task.id });
   }
   async function toggle(s) {
     await sb.from('subtasks').update({ done: !s.done }).eq('id', s.id);
-    onChanged();
+    onChanged({ sub: { ...s, done: !s.done } });
   }
   async function remove(id) {
     await sb.from('subtasks').delete().eq('id', id);
-    onChanged();
+    onChanged({ sub: { id, task_id: task.id }, removed: true });
   }
 
   return (
@@ -203,16 +204,16 @@ function TaskRow({ task, subs, rule, showReschedule, onEdit, onChanged }) {
     const rect = evt.currentTarget.getBoundingClientRect();
     const willBeDone = await toggleTask(task);
     if (willBeDone) { burstConfetti(rect.x, rect.y); playSuccessSound(); }
-    onChanged();
+    onChanged({ id: task.id, done: willBeDone });
   }
   async function handleReschedule(id, newDate) {
     await rescheduleTask(id, newDate);
     setRescheduling(false);
-    onChanged();
+    onChanged({ id, date_key: newDate });
   }
   async function handleToggleFlag() {
     await saveTask(task.id, { flagged: !task.flagged });
-    onChanged();
+    onChanged({ id: task.id, flagged: !task.flagged });
   }
 
   return (
@@ -253,7 +254,7 @@ function TaskRow({ task, subs, rule, showReschedule, onEdit, onChanged }) {
               }}>↻ Parar de repetir</button>}
             </>
           ) : (
-            <button className="danger" onClick={async () => { if (confirm(`Apagar "${task.title}"?`)) { await deleteTask(task.id); onChanged(); } }}><TrashIcon />Apagar</button>
+            <button className="danger" onClick={async () => { if (confirm(`Apagar "${task.title}"?`)) { await deleteTask(task.id); onChanged({ id: task.id, removed: true }); } }}><TrashIcon />Apagar</button>
           )}
         </div>
       )}
@@ -306,6 +307,27 @@ export default function RotinaView({ startNew = false }) {
     else if (noDateMode) loadNoDate();
     else loadDay(viewedDate);
   }, [recMode, noDateMode, viewedDate, loadDay, loadNoDate, user]);
+
+  // B6: depois de uma ação na lista, ajusta só o item mexido em vez de recarregar o dia
+  async function applyChange(change) {
+    if (!change) { refresh(); return; }
+    if (change.sub) {
+      const { sub, removed } = change;
+      setSubtasksByTask(m => {
+        const arr = m[sub.task_id] || [];
+        return { ...m, [sub.task_id]: removed ? arr.filter(x => x.id !== sub.id) : arr.map(x => (x.id === sub.id ? sub : x)) };
+      });
+      return;
+    }
+    if (change.subsOf) {
+      const { data } = await sb.from('subtasks').select('*').eq('user_id', user.id).eq('task_id', change.subsOf).order('created_at');
+      setSubtasksByTask(m => ({ ...m, [change.subsOf]: data || [] }));
+      return;
+    }
+    const { id, removed, ...fields } = change;
+    const leaves = removed || ('date_key' in fields && (noDateMode ? fields.date_key !== null : fields.date_key !== viewedDate));
+    setViewedTasks(list => (leaves ? list.filter(t => t.id !== id) : list.map(t => (t.id === id ? { ...t, ...fields } : t))));
+  }
 
   function refresh() {
     if (recMode) { loadRecurring(user.id).then(setRules); return; }
@@ -447,7 +469,7 @@ export default function RotinaView({ startNew = false }) {
             <div className="routine-group-body">
               {groups[s.key].map(t => (
                 <TaskRow key={t.id} task={t} subs={subtasksByTask[t.id] || []} rule={t.recurring_id ? rulesById[t.recurring_id] : null}
-                  showReschedule={!noDateMode && !isToday} onEdit={openEdit} onChanged={refresh} />
+                  showReschedule={!noDateMode && !isToday} onEdit={openEdit} onChanged={applyChange} />
               ))}
             </div>
           </div>
