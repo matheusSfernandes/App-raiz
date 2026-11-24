@@ -9,6 +9,21 @@ export const catsFor = type => (type === 'in' ? INCOME_CATS : EXPENSE_CATS);
 export const catOf = t => t.category || NO_CAT;
 
 export const brl = v => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+// Valor em reais que não quebra o layout (testes 24/11, M3): sinal colado, fonte menor se longo,
+// e forma curta (ex: R$ 2 mi) a partir de compactFrom. `full` vai no title para ver o valor inteiro.
+export function moneyFit(v, { compactFrom = Infinity, noCents = false } = {}) {
+  const n = Number(v || 0);
+  const opts = { style: 'currency', currency: 'BRL' };
+  if (noCents) opts.maximumFractionDigits = 0;
+  const sign = t => t.replace(/^-\s?/, '\u2212');
+  const full = sign(n.toLocaleString('pt-BR', opts));
+  const text = Math.abs(n) >= compactFrom
+    ? sign(n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 }))
+    : full;
+  const cls = text.length > 18 ? 'money xlong' : text.length > 13 ? 'money long' : 'money';
+  return { text, full, cls };
+}
+
 export const brlShort = v => {
   const n = Math.abs(Number(v || 0));
   const s = n >= 1000 ? `${(n / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil` : n.toLocaleString('pt-BR', { maximumFractionDigits: 0 });

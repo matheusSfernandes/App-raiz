@@ -4,14 +4,14 @@ import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
 import { CATEGORIES, DAY_LETTERS, todayKey, dateToKey } from '../../lib/helpers';
 import { ALL_DAYS, isFlexible, isNumeric, bestStreak, formatAmount, weekStartKey, createdKey } from '../../lib/habits';
-import { CheckIcon, FlameIcon, PencilIcon, TrashIcon } from '../ui/Icons';
+import { CheckIcon, FlameIcon, PencilIcon } from '../ui/Icons';
 import { burstConfetti, playSuccessSound } from '../../lib/effects';
 import { LIMITS, toNum, maxMsg } from '../../lib/validate';
 
 /* ---------- Formulário ---------- */
 
 function HabitForm({ editing, onCancel }) {
-  const { saveHabit } = useAppData();
+  const { saveHabit, deleteHabit } = useAppData();
   const [name, setName] = useState(editing?.name || '');
   const [time, setTime] = useState(editing?.time || '');
   const [category, setCategory] = useState(editing?.category || 'Geral');
@@ -100,6 +100,11 @@ function HabitForm({ editing, onCancel }) {
         <button className="btn" onClick={handleSave} disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
         <button className="btn ghost" onClick={onCancel}>Cancelar</button>
       </div>
+      {editing && (
+        <button type="button" className="link-btn danger-link" onClick={() => {
+          if (confirm(`Apagar o hábito "${editing.name}"? Isso também apaga o histórico dele.`)) { deleteHabit(editing.id); onCancel(); }
+        }}>Apagar hábito</button>
+      )}
     </div>
   );
 }
@@ -155,7 +160,7 @@ function ProgressPanel({ habit, onClose }) {
 }
 
 function HabitRow({ habit, onEdit, onOpen }) {
-  const { toggleHabit, deleteHabit } = useAppData();
+  const { toggleHabit } = useAppData();
   const [panel, setPanel] = useState(false);
   const today = todayKey();
   const flex = isFlexible(habit);
@@ -201,7 +206,6 @@ function HabitRow({ habit, onEdit, onOpen }) {
           <FlameIcon />{habit.streak}{flex ? ' sem.' : ''}
         </div>
         <button className="edit-btn" aria-label="Editar" onClick={() => onEdit(habit)}><PencilIcon /></button>
-        <button className="del-btn" aria-label="Apagar" onClick={() => { if (confirm(`Apagar o hábito "${habit.name}"? Isso também apaga o histórico dele.`)) deleteHabit(habit.id); }}><TrashIcon /></button>
       </div>
       {panel && numeric && <ProgressPanel habit={habit} onClose={() => setPanel(false)} />}
     </>

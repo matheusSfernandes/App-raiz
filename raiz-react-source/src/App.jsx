@@ -23,26 +23,44 @@ import MetasView from './components/views/MetasView';
 
 const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
+const VIEWS = ['inicio', 'rotina', 'habitos', 'metas', 'treino', 'financas', 'historico', 'perfil', 'conquistas', 'foco'];
+
 function AppShell() {
   const { profile, loading, toasts } = useAppData();
   // Abre direto numa tela quando vem de um lembrete (?view=historico&tab=revisao)
-  const [view, setView] = useState(() => new URLSearchParams(location.search).get('view') || 'inicio');
+  const [view, setView] = useState(() => {
+    const v = new URLSearchParams(location.search).get('view');
+    return VIEWS.includes(v) ? v : 'inicio';
+  });
   const [viewTab, setViewTab] = useState(() => new URLSearchParams(location.search).get('tab'));
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // M5 (testes 24/11): a tela atual fica no endereço (?view=rotina), então recarregar mantém a tela
+  // e o Voltar do navegador ou do Android volta para a tela anterior
   useEffect(() => {
-    if (location.search) history.replaceState(null, '', location.pathname);
+    history.replaceState({ view }, '', view === 'inicio' ? location.pathname : `?view=${view}`);
+    function onPop(e) {
+      const v = e.state?.view || new URLSearchParams(location.search).get('view') || 'inicio';
+      setView(v); setViewTab(null); setDrawerOpen(false);
+    }
     function onMsg(e) {
       if (e.data?.type !== 'open') return;
       const p = new URL(e.data.url).searchParams;
+      const v = p.get('view') || 'inicio';
       setViewTab(p.get('tab'));
-      setView(p.get('view') || 'inicio');
+      setView(v);
+      history.pushState({ view: v }, '', v === 'inicio' ? location.pathname : `?view=${v}`);
     }
+    window.addEventListener('popstate', onPop);
     navigator.serviceWorker?.addEventListener('message', onMsg);
-    return () => navigator.serviceWorker?.removeEventListener('message', onMsg);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      navigator.serviceWorker?.removeEventListener('message', onMsg);
+    };
   }, []);
 
   function navigate(v) {
+    if (v !== view) history.pushState({ view: v }, '', v === 'inicio' ? location.pathname : `?view=${v}`);
     setView(v);
     setViewTab(null);
     setDrawerOpen(false);

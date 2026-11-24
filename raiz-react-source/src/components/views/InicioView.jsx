@@ -3,6 +3,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { sb } from '../../lib/supabaseClient';
 import { todayKey, todayHabits, dateToKey, AREA_COLORS } from '../../lib/helpers';
 import { countsOnDay } from '../../lib/habits';
+import { moneyFit } from '../../lib/finance';
 import JournalCard from '../JournalCard';
 import { loadGoals, goalProgress, deadlineLabel } from '../../lib/goals';
 
@@ -123,7 +124,7 @@ export default function InicioView({ onNavigate }) {
         <div className="stat-card"><div className="k">{habitsDone}/{habitsToday.length}</div><div className="l">Hábitos hoje</div></div>
         <div className="stat-card"><div className="k">{tasksDone}/{tasks.length}</div><div className="l">Tarefas hoje</div></div>
         <div className="stat-card"><div className="k">{maxStreak} {maxStreak === 1 ? 'dia' : 'dias'}</div><div className="l">Maior sequência</div></div>
-        <div className="stat-card"><div className="k">{balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</div><div className="l">Saldo</div></div>
+        <div className="stat-card">{(() => { const m = moneyFit(balance, { compactFrom: 1e6, noCents: true }); return <div className={`k ${m.cls}`} title={m.full}>{m.text}</div>; })()}<div className="l">Saldo</div></div>
       </div>
 
       <JournalCard />

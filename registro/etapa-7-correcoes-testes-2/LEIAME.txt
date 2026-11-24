@@ -1,0 +1,15 @@
+Etapa 7, correções dos testes de 24/11/2026, parte 2 (M3, M4, M5)
+Relatório de origem: registro/testes-2026-11-24/RELATORIO.md (prints do antes: 07, 09, 10)
+
+M3. Valor grande quebra o layout
+Antes: com saldo grande, o sinal de menos ficava numa linha sozinho e o número era cortado na borda no celular; a tabela "Ver em tabela" dos 6 meses passava da largura.
+Depois: o sinal fica colado ao número e o valor nunca quebra linha. Valores longos ganham fonte menor; nos cartões pequenos (Entradas, Saídas, Saldo do mês a partir de R$ 100 mil e Saldo do Início a partir de R$ 1 milhão) aparece a forma curta, ex: "R$ 250 mil", "−R$ 200 bi". Segurar o dedo ou passar o mouse mostra o valor inteiro. A tabela dos 6 meses rola para o lado dentro do cartão.
+
+M4. Áreas de toque pequenas no celular
+Antes: marcar hábito ou tarefa 22 px, editar, apagar e "Mais ações" 26 px, abas internas 30 px, Sair 31 px.
+Depois (só em telas de toque; ícones do mesmo tamanho): marcar, registrar quantidade, editar, "Mais ações", abas internas (Por data, Resumo, Claro/Escuro etc.), Editar do Perfil e Sair com pelo menos 44 px de área de toque.
+A lixeira saiu da linha do hábito (ficava colada no lápis); agora é "Apagar hábito", em vermelho, no fim do formulário de edição, com a mesma confirmação.
+
+M5. Recarregar volta ao Início
+Antes: recarregar a página ou voltar de outro app no celular levava ao Início; o Voltar do navegador saía do app.
+Depois: a tela atual fica no endereço (ex: app-raiz.pages.dev/?view=rotina). Recarregar mantém a tela e o Voltar do navegador ou do Android volta para a tela anterior. Os lembretes push continuam abrindo a tela certa.

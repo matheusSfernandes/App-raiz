@@ -2,11 +2,17 @@ import { useState, useMemo, useRef } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import { todayKey, formatKeyBR } from '../../lib/helpers';
 import {
-  brl, brlShort, catsFor, catOf, NO_CAT, currentMonth, shiftMonth, monthLabel, monthShort,
+  brl, brlShort, moneyFit, catsFor, catOf, NO_CAT, currentMonth, shiftMonth, monthLabel, monthShort,
   monthTotals, spendingByCategory, billsForMonth,
 } from '../../lib/finance';
 import { TrashIcon, PencilIcon } from '../ui/Icons';
 import { LIMITS, toNum, moneyProblem } from '../../lib/validate';
+
+// Valor que se ajusta ao espaço (M3)
+function Money({ v, className = '', compactFrom, noCents }) {
+  const m = moneyFit(v, { compactFrom, noCents });
+  return <div className={`${className} ${m.cls}`} title={m.full}>{m.text}</div>;
+}
 
 // ---------- Formulários ----------
 
@@ -132,12 +138,12 @@ function MonthStats({ month }) {
   }
   return (
     <div className="fin-stats">
-      <div className="fin-stat"><div className="l">Entradas</div><div className="v in">{brl(cur.inc)}</div></div>
+      <div className="fin-stat"><div className="l">Entradas</div><Money v={cur.inc} className="v in" compactFrom={1e5} /></div>
       <div className="fin-stat">
-        <div className="l">Saídas</div><div className="v">{brl(cur.out)}</div>
+        <div className="l">Saídas</div><Money v={cur.out} className="v" compactFrom={1e5} />
         {delta && <div className={`fin-delta ${delta.up ? 'up' : 'down'}`}>{delta.pct > 0 ? '+' : ''}{delta.pct}% vs {monthShort(shiftMonth(month, -1))}</div>}
       </div>
-      <div className="fin-stat"><div className="l">Saldo do mês</div><div className={`v ${cur.net < 0 ? 'neg' : ''}`}>{brl(cur.net)}</div></div>
+      <div className="fin-stat"><div className="l">Saldo do mês</div><Money v={cur.net} className={`v ${cur.net < 0 ? 'neg' : ''}`} compactFrom={1e5} /></div>
     </div>
   );
 }
@@ -220,12 +226,12 @@ function MonthsChart({ month, onPick }) {
       </div>
       <details className="mchart-table">
         <summary>Ver em tabela</summary>
-        <table>
+        <div className="table-scroll"><table>
           <thead><tr><th>Mês</th><th>Entradas</th><th>Saídas</th><th>Saldo</th></tr></thead>
           <tbody>{[...data].reverse().map(d => (
             <tr key={d.m}><td>{monthShort(d.m)}/{d.m.slice(2, 4)}</td><td>{brl(d.inc)}</td><td>{brl(d.out)}</td><td className={d.net < 0 ? 'neg' : ''}>{brl(d.net)}</td></tr>
           ))}</tbody>
-        </table>
+        </table></div>
       </details>
     </div>
   );
@@ -364,7 +370,7 @@ export default function FinancasView() {
 
   return (
     <div className="view active">
-      <div className="balance-hero"><div className="l">Saldo atual</div><div className={`v ${balance < 0 ? 'neg' : ''}`}>{brl(balance)}</div></div>
+      <div className="balance-hero"><div className="l">Saldo atual</div><Money v={balance} className={`v ${balance < 0 ? 'neg' : ''}`} /></div>
 
       <div className="day-nav" style={{ marginTop: 16 }}>
         <button className="cal-arrow" onClick={() => goMonth(shiftMonth(month, -1))} aria-label="Mês anterior">‹</button>

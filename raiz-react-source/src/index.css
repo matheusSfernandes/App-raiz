@@ -881,3 +881,27 @@ button { font-family: inherit; }
 
 /* Etapa 7, testes 24/11: aviso do que falta no formulário (A2/A3/M2) */
 .form-hint { color: var(--danger); background: var(--danger-soft); font-size: 13px; font-weight: 500; line-height: 1.35; padding: 8px 10px; border-radius: var(--radius-sm); margin: 4px 0 8px; }
+
+/* M3 (testes 24/11): valores grandes não quebram o layout */
+.money { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.money.long { font-size: 0.8em; }
+.money.xlong { font-size: 0.62em; }
+.balance-hero .v.money.long { font-size: 26px; }
+.balance-hero .v.money.xlong { font-size: 21px; }
+.fin-stat .v { overflow-wrap: normal; }
+.fin-stat .v.money.long, .fin-stat .v.money.xlong { font-size: 13px; }
+.stat-card .k.money.long { font-size: 18px; }
+.stat-card .k.money.xlong { font-size: 15px; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-scroll td, .table-scroll th { white-space: nowrap; padding-left: 12px; }
+
+/* M4 (testes 24/11): área de toque de pelo menos 44 px no celular, ícones do mesmo tamanho */
+.danger-link { color: var(--danger); display: block; margin: 10px auto 0; padding: 10px 12px; }
+@media (pointer: coarse) {
+  .check, .amount-btn { position: relative; }
+  .check::after, .amount-btn::after { content: ''; position: absolute; inset: -11px; }
+  .check.small::after { inset: -13px; }
+  .del-btn, .edit-btn { min-width: 44px; min-height: 44px; }
+  .seg-btn { min-height: 44px; }
+  .logout-btn { min-height: 44px; padding: 10px 16px; }
+}
