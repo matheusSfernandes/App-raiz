@@ -1,0 +1,31 @@
+Etapa 7, itens baixos do teste de 24/11/2026 (B1, B2, B3, B5) e Primeiro acesso guiado
+Relatório de origem: registro/testes-2026-11-24/RELATORIO.md (print do antes: 04-form-habito-dias-grandes.jpg e antes-habito-dias-e-botoes.jpg)
+
+B3. Dias da semana gigantes no computador
+Antes: os 7 quadrados de D a S ocupavam a largura toda do formulário; leitores de tela liam só "S", "Q".
+Depois: cada dia tem no máximo 44 px (no celular continuam dividindo a largura). Cada botão diz o nome completo do dia (Domingo, Segunda...) e se está marcado. Vale para hábitos e para tarefas que repetem em dias da semana.
+
+B5. Ordem dos botões
+Antes: Hábitos, Rotina, Finanças, Treino e Perfil usavam "Salvar | Cancelar"; Metas usava "Cancelar | Criar meta".
+Depois: em todos, Cancelar (ou Descartar no treino) à esquerda e a ação principal à direita, como em Metas.
+
+B1. Nenhuma tela dizia onde a pessoa estava
+Antes: todas as telas começavam com "Bom dia" e a frase.
+Depois: a saudação e a frase ficam só no Início; nas outras telas o título é o nome da tela (Hábitos, Finanças...). A aba do navegador também mostra "Hábitos · Raiz" etc.
+
+B2 e Primeiro acesso guiado
+Antes: uma conta nova abria o Início só com zeros, sem convite nem atalho.
+Depois: cartão "Boas-vindas ao Raiz" no topo do Início com 4 passos que se marcam sozinhos:
+  1. Como quer ser chamado? (campo de nome ali mesmo)
+  2. Crie seu primeiro hábito (botão abre Hábitos com o formulário já aberto)
+  3. Planeje uma tarefa (abre Rotina com o formulário aberto)
+  4. Registre uma entrada ou um gasto (abre Finanças com o formulário aberto)
+Ao concluir os 4, aparece "Pronto, seu Raiz está montado" com o botão Fechar guia. "Pular guia" esconde a qualquer momento.
+A escolha fica no perfil (coluna profiles.onboarding_done, sql/2026-11-24-primeiro-acesso.sql), então o guia não volta em outro aparelho. Contas que já tinham hábito, tarefa ou movimentação foram marcadas como concluídas e não veem o guia.
+Também no Início: se "Áreas da vida" estiver vazio, aparecem os atalhos Criar hábito e Criar tarefa.
+
+Conferido no app publicado em 24/11/2026 (conta de teste, computador):
+- Hábitos: título "Hábitos", dias com 44 px, Cancelar à esquerda e Salvar à direita (depois-habito-titulo-dias-botoes.jpg)
+- Guia com 3 de 4 passos feitos (depois-inicio-guia-primeiro-acesso.jpg); salvar o nome completou o guia e a saudação virou "Bom dia, Teste" (depois-inicio-guia-concluido.jpg)
+- "Pular guia" escondeu o cartão e gravou onboarding_done = true no banco
+- O nome da conta de teste voltou a ficar vazio depois do teste
