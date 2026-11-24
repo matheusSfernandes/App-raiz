@@ -958,3 +958,29 @@ h1.greeting { margin-bottom: 0; }
   .welcome-go { margin-left: 34px; }
 }
 @media (pointer: coarse) { .welcome-foot .link-btn { min-height: 44px; padding: 0 8px; } }
+
+/* ============ Menu fixo e recolhível no computador ============ */
+.sidebar-collapse { display: none; }
+@media (min-width: 900px) {
+  .hamburger-btn, .sidebar-backdrop, .sidebar-backdrop.show { display: none; }
+  .sidebar {
+    position: sticky; top: 0; flex-shrink: 0; transform: none; box-shadow: none;
+    width: 240px; max-width: none; transition: width .2s ease, padding .2s ease; overflow-x: hidden;
+  }
+  .sidebar.open { box-shadow: none; }
+  .sidebar-logo { padding-right: 0; }
+  .sidebar-logo-text { flex: 1; }
+  .sidebar-collapse {
+    display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0;
+    border: none; background: transparent; color: var(--ink-soft); border-radius: 8px; cursor: pointer;
+  }
+  .sidebar-collapse:hover { background: var(--surface-2); color: var(--ink); }
+  .sidebar-collapse svg { width: 19px; height: 19px; }
+  .sidebar .tab span, .sidebar-logo-text { white-space: nowrap; }
+
+  .sidebar.collapsed { width: 68px; padding-left: 10px; padding-right: 10px; }
+  .sidebar.collapsed .sidebar-logo { flex-direction: column; padding: 4px 0 16px; gap: 12px; }
+  .sidebar.collapsed .sidebar-logo-text, .sidebar.collapsed .tab span { display: none; }
+  .sidebar.collapsed .tab { justify-content: center; padding: 10px 0; }
+  .sidebar.collapsed .logout-btn { margin-left: 0; align-self: center; padding: 7px 8px; }
+}
